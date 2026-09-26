@@ -65,3 +65,5 @@ Deliverables
 ## 4. Alternate take prompt (verbatim, branch `alt/repent`)
 
 > let's do an alternate take on the simony video where the narrator jokingly (in a serious tone) says "And that's why if you are charging for your teaching you are going to hell. Time to repent, sinners!"
+
+> I want it to be said in the same exact tone as the rest of the video.

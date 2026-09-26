@@ -596,13 +596,13 @@
     underlineRun(dd, C, 1, 2, RED, W("l10", "reformation", 0, true));
   })();
 
-  // ---------------------------------------------------------------- S9 (alt/repent) the deadpan verdict, played completely straight
+  // ---------------------------------------------------------------- S9 (alt/repent) the verdict, played completely straight (same narration tone as the rest)
   (function () {
     const { S, st, dd } = scene("s9", "vellum-bg");
     const t0 = B[8], t1 = B[9];
     drift(st, t0, t1 - t0, 0.015);
     const words = ["and", "that's", "why", "if", "you", "are", "charging", "for", "your", "teaching", "you", "are", "going", "to", "hell", "time", "to", "repent", "sinners"];
-    const C = verse(st, 210, 110, 1500, "And that’s why, if you are charging for your teaching, you are going to hell. Time to repent, sinners!", "", 72, true);
+    const C = verse(st, 210, 110, 1500, "And that’s why if you are charging for your teaching you are going to hell. Time to repent, sinners!", "", 72, true);
     C.querySelector(".q").style.color = RED;
     const tA = W("rp", "and");
     slideIn(C, tA - 0.3, 0, 0);

@@ -77,3 +77,9 @@ img	gen/assets/flames.png	0.022475
 review	splice.mp3	0.00625
 review	sp32.mp3	0.01069
 review	rp-final.mp3	0.014258
+tts	gen/vo-rp2/rpd.mp3	0.0019565
+tts	gen/vo-rp2/rpe.mp3	0.0021275
+tts	gen/vo-rp2/rpf.mp3	0.0019565
+tts	gen/vo-rp2/rpg.mp3	0.0020825
+review	rpg.mp3	0.015144
+review	rp2-final.mp3	0.018416
