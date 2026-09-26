@@ -2,6 +2,7 @@
 
 A 110-second, 4K, hand-made paper-collage stop-motion explainer for *The Doctrine of Simony: A Theological Retrieval and Appraisal* by Conley Owens ([simony.info](https://simony.info)), built with [HyperFrames](https://hyperframes.heygen.com).
 
+- **Alternate joke take (branch `alt/repent`):** `renders/simony-4k-repent.mp4` (122.6 s), with a deadpan "repent, sinners" scene before the end card — see BRIEF.md
 - **Render:** `renders/simony-4k.mp4` (3840×2160 @ 30 fps, 109.6 s, audio -14.1 LUFS). No proxy copies, no portrait version yet.
 - **YouTube thumbnail:** `renders/youtube-thumbnail-1280.jpg` (upload this one), `-1920.jpg`, `-4k.png`. Source: `thumbnail/index.html` (re-export with `cd thumbnail && npx hyperframes snapshot --at 0.5 --no-end`)
 - **YouTube title & description:** `YOUTUBE.md`

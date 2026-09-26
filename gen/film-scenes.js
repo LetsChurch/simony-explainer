@@ -316,10 +316,44 @@
     underlineRun(dd, C, 1, 2, RED, W("l10", "reformation", 0, true));
   })();
 
-  // ---------------------------------------------------------------- S9 the book
+  // ---------------------------------------------------------------- S9 (alt/repent) the deadpan verdict, played completely straight
   (function () {
-    const { S, st, dd } = scene("s9", "lapis-bg");
+    const { S, st, dd } = scene("s9", "vellum-bg");
     const t0 = B[8], t1 = B[9];
+    drift(st, t0, t1 - t0, 0.015);
+    const words = ["and", "that's", "why", "if", "you", "are", "charging", "for", "your", "teaching", "you", "are", "going", "to", "hell", "time", "to", "repent", "sinners"];
+    const C = verse(st, 210, 110, 1500, "And that’s why, if you are charging for your teaching, you are going to hell. Time to repent, sinners!", "", 72, true);
+    C.querySelector(".q").style.color = RED;
+    const tA = W("rp", "and");
+    slideIn(C, tA - 0.3, 0, 0);
+    revealAt(C, seq("rp", words));
+    // cut-paper flames lick up from the bottom of the frame on "hell"
+    const tH = T("rp", "hell"), FW = 1060, FH = FW * RATIO.flames;
+    [[-40, 1], [900, -1]].forEach(([x, flip], i) => {
+      const fl = mk(st, "pp noshadow", { left: x + "px", top: 1080 + 30 - FH + "px", width: FW + "px", transformOrigin: "50% 100%" });
+      fl.innerHTML = `<div class="j"><img src="${IMG}flames.webp" style="transform:scaleX(${flip})" /></div>`;
+      tl.set(fl, { y: FH + 40 }, 0);
+      anim(fl, tH - 0.05 + i * 0.06, 0.45, (p) => ({ y: (FH + 40) * (1 - E("back.out(1.3)")(p)) }), 12);
+      for (let k = 0, tt = tH + 0.45; tt < t1; k++, tt += 1 / 6) tl.set(fl, { scaleY: 1 + 0.045 * Math.sin(k * 1.9 + i * 2) }, tt);
+      jit("#" + (fl.id = "s9-fl" + i), tH + 0.5, t1, 0.8, 95 + i);
+    });
+    // a big rubric-red torn-paper stamp slams down on "sinners"
+    const st2 = mk(st, "abs", { position: "absolute", left: "0px", top: "560px", transformOrigin: "50% 50%" });
+    st2.innerHTML = `<div style="position:relative;padding:26px 70px 34px;font-family:'Cormorant SC';font-weight:700;font-size:128px;letter-spacing:.04em;line-height:1;color:${PARCH};white-space:nowrap">
+      <div style="position:absolute;inset:0;background:${RED} url(${IMG}paper-bg.webp) center/1600px auto;background-blend-mode:multiply;-webkit-mask-image:url(${IMG}tear-cream.webp);mask-image:url(${IMG}tear-cream.webp);-webkit-mask-size:100% 100%;mask-size:100% 100%;filter:none"></div>
+      <span style="position:relative">Repent, sinners!</span></div>`;
+    st2.style.filter = "drop-shadow(0 16px 16px rgba(40,20,10,.45))";
+    st2.style.left = 960 - st2.offsetWidth / 2 + "px";
+    const tS = T("rp", "sinners");
+    hide(st2); anim(st2, tS - 0.04, 0.14, (p) => ({ opacity: 1, scale: lerp(1.9, 1, E("power2.in")(p)), rotation: lerp(-14, -5, p) }), 24);
+    anim(st2, tS + 0.11, 0.14, (p) => ({ scale: 1 - 0.05 * Math.sin(Math.PI * p), rotation: -5 }), 24);
+    anim(st, tS + 0.1, 0.25, (p) => ({ x: 10 * Math.sin(p * Math.PI * 5) * (1 - p) }), 24);
+  })();
+
+  // ---------------------------------------------------------------- S10 the book
+  (function () {
+    const { S, st, dd } = scene("s10", "lapis-bg");
+    const t0 = B[9], t1 = B[10];
     popScene(st, t0, t1);
     const cv = mk(st, "pp", { left: "250px", top: "120px", width: "440px", transformOrigin: "50% 50%" });
     cv.innerHTML = `<div class="j"><div style="padding:10px;background:#f6f2e6;box-shadow:0 14px 20px rgba(10,15,20,.45)"><img src="${IMG}cover.jpg" style="width:420px;display:block;filter:none" /></div>

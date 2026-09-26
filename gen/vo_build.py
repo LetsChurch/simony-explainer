@@ -1,9 +1,10 @@
 """Trim the chosen takes, lay them out with gaps -> assets/audio/vo.wav + gen/vo-lines.json"""
 import json, subprocess
-PICK = {"l1": "vo2/l1b", "l2": "vo/l2c", "l3": "vo/l3b", "l4": "vo/l4b", "l5": "vo/l5b", "l6": "vo/l6b", "l7": "vo/l7b", "l8": "vo/l8b", "l9": "vo/l9b", "l10": "vo/l10cb", "l11": "vo/l11c"}
+PICK = {"l1": "vo2/l1b", "l2": "vo/l2c", "l3": "vo/l3b", "l4": "vo/l4b", "l5": "vo/l5b", "l6": "vo/l6b", "l7": "vo/l7b", "l8": "vo/l8b", "l9": "vo/l9b", "l10": "vo/l10cb", "rp": "vo-rp/rpc", "l11": "vo/l11c"}
 # l10 = take c's first sentence (full "instruction") + take b's question, spliced in the pause (gen/vo/l10cb.mp3)
+# alt/repent: the deadpan joke line 'rp' follows l10 after a beat of silence (take c, the most solemn of three)
 # hard cuts need ~0.9 s, torn-paper wipes ~1.6 s so every animation holds >= 0.6 s before the sheet covers it
-GAP_AFTER = {"l1": 0.9, "l2": 0.45, "l3": 1.6, "l4": 0.9, "l5": 0.9, "l6": 1.6, "l7": 1.6, "l8": 0.55, "l9": 0.9, "l10": 1.6}
+GAP_AFTER = {"l1": 0.9, "l2": 0.45, "l3": 1.6, "l4": 0.9, "l5": 0.9, "l6": 1.6, "l7": 1.6, "l8": 0.55, "l9": 0.9, "l10": 1.5, "rp": 1.6}
 START, TAIL = 0.7, 3.2
 lines = json.load(open("gen/lines.json"))
 t, out, parts = START, [], []

@@ -13,7 +13,8 @@ def W(i, word, n=0, end=False):
             c += 1
     raise KeyError(f"{i} {word} {n}")
 HARD, WIPE = 0.6, 1.25            # cut offsets after the last line of a scene
-# scenes: S1 l1 | S2 l2-l3 | S3 l4 | S4 l5 | S5 l6 | S6 l7 | S7 l8-l9 | S8 l10 | S9 l11
-CUTS = [round(v, 3) for v in (LE("l1") + HARD, LE("l3") + WIPE, LE("l4") + HARD, LE("l5") + HARD, LE("l6") + WIPE, LE("l7") + WIPE, LE("l9") + HARD, LE("l10") + WIPE)]
+# scenes: S1 l1 | S2 l2-l3 | S3 l4 | S4 l5 | S5 l6 | S6 l7 | S7 l8-l9 | S8 l10 | S9 rp | S10 l11
+# alt/repent: S9 is the deadpan "repent" scene (line rp), S10 the end card
+CUTS = [round(v, 3) for v in (LE("l1") + HARD, LE("l3") + WIPE, LE("l4") + HARD, LE("l5") + HARD, LE("l6") + WIPE, LE("l7") + WIPE, LE("l9") + HARD, LE("l10") + 0.9, LE("rp") + WIPE)]
 TOTAL = round(WJ["total"], 2)
-WIPES = [CUTS[1], CUTS[4], CUTS[5], CUTS[7]]
+WIPES = [CUTS[1], CUTS[4], CUTS[5], CUTS[8]]

@@ -69,3 +69,11 @@ review	instr-c.mp3	0.01585
 review	l10.wav	0.024298
 review	l10-splice.mp3	0.043924
 review	instr-c.mp3	0.013478
+tts	gen/vo-rp/rpa.mp3	0.0031815
+tts	gen/vo-rp/rpb.mp3	0.0031995
+tts	gen/vo-rp/rpc.mp3	0.0034605
+review	rpc.mp3	0.022846
+img	gen/assets/flames.png	0.022475
+review	splice.mp3	0.00625
+review	sp32.mp3	0.01069
+review	rp-final.mp3	0.014258

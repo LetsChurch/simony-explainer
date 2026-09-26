@@ -57,8 +57,12 @@ c(T("l9", "god") - 0.04, "slap", 0.4); c(T("l9", "god") + 0.1, "twinkle", 0.2); 
 # S8 today
 for w in ("selling", "theological", "instruction"): c(T("l10", w) - 0.04, "slap", 0.4); c(T("l10", w) + 0.25, "tapeS", 0.3)
 c(T("l10", "multibillion"), "write", 0.14); c(T("l10", "what") - 0.35, "swoosh", 0.25); c(T("l10", "what") - 0.12, "tape", 0.4); c(W("l10", "reformation", end=True), "scrape", 0.2)
-# S9 the book
-c(B[8], "slap", 0.3); c(max(B[8] + 0.2, T("l11", "the") - 0.1), "pop", 0.35); c(T("l11", "the") + 0.1, "tape", 0.5); c(T("l11", "simony"), "write", 0.12); c(T("l11", "by"), "write", 0.1)
+# S9 (alt/repent) the deadpan verdict
+c(W("rp", "and") - 0.3, "swoosh", 0.25); c(W("rp", "and") - 0.05, "tapeS", 0.3)
+c(T("rp", "hell") - 0.05, "shake", 0.3); c(T("rp", "hell") + 0.1, "thud", 0.3)
+c(T("rp", "sinners") - 0.04, "stamp", 0.8); c(T("rp", "sinners") + 0.02, "thud", 0.45)
+# S10 the book
+c(B[9], "slap", 0.3); c(max(B[9] + 0.2, T("l11", "the") - 0.1), "pop", 0.35); c(T("l11", "the") + 0.1, "tape", 0.5); c(T("l11", "simony"), "write", 0.12); c(T("l11", "by"), "write", 0.1)
 c(T("l11", "read") - 0.04, "slap", 0.4); c(T("l11", "free") - 0.04, "slap", 0.4); c(W("l11", "free", end=True) + 0.11, "slap", 0.35)
 c(T("l11", "simony", 1) - 0.04, "slap", 0.5); c(T("l11", "simony", 1) + 0.06, "chime", 0.2); c(W("l11", "info", end=True) - 0.7, "flutter", 0.3); c(LE("l11") + 0.4, "twinkle", 0.18)
 

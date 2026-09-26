@@ -47,3 +47,11 @@ It explains the book's case clearly and fairly. It's an explainer, not a story. 
 User: "Fix these question marks" and "'a' appears before 'awaits' here: 'What new reformation awaits a church'".
 - Scene 1: the question marks are now single-stroke hand-inked paths (hook + dot) on the boiling doodle layer, drawn on each spoken word.
 - Word-by-word cards now take each word's time from ITS occurrence in the line, walking the aligned words in order, and are forced monotonic (`seq()` in `gen/film-scenes.js`). This fixed the question card's "a" (it was taking the "a" from "is a multibillion", 5.4 s early); every other card was audited and was already correct.
+
+## Alternate take: `alt/repent` (joke version — the main master is unchanged)
+**This branch is an alternate joke take.** `main` and `renders/simony-4k.mp4` stay as they are; this take renders to `renders/simony-4k-repent.mp4` (122.6 s).
+User: "let's do an alternate take on the simony video where the narrator jokingly (in a serious tone) says "And that's why if you are charging for your teaching you are going to hell. Time to repent, sinners!""
+- New narration line `rp` after line 10, after a 1.5 s beat of silence: "And that's why, if you are charging for your teaching, you are going to hell. Time to repent, sinners!" (100.57–112.07 s; "hell" 107.62 s, "sinners" 111.39 s). Sadaltager, directed completely deadpan and grave; take c of three (rated most solemn); "hell" falls 14 Hz, "repent, sinners" sits ~3 semitones below the line median.
+- New scene S9, played straight: the line on a rubric-red card revealed word by word (forced-aligned, in-order times), cut-paper flames (one generated asset, `flames.webp`) rising on "hell", and a torn-paper "Repent, sinners!" stamp slamming down on "sinners"; it holds before the torn-paper wipe into the end card (now S10).
+- Music bed extended with a seamless 8-bar loop at 84.9 s (`gen/music/m-b-ext.mp3`); it now runs under the end card and fades out at the end. Re-ducked around the new line; master -14.1 LUFS.
+- Round spend: about $0.07 (3 TTS takes, 1 flame image, 5 short AI listens).
