@@ -412,6 +412,24 @@
   function coin(parent, x, y, s) { return mk(parent, "", { position: "absolute", left: x + "px", top: y + "px", width: s + "px", height: s + "px", borderRadius: "50%", background: `radial-gradient(circle at 35% 35%, #e7c46e, ${GILT} 60%, #8a6526)`, border: "3px solid #7a5a22", boxSizing: "border-box", boxShadow: "0 3px 4px rgba(45,35,20,.3)" }); }
   const lab = (parent, cx, y, w, txt, size, css) => hand(parent, cx - w / 2, y, size || 46, txt, Object.assign({ width: w + "px", textAlign: "center" }, css || {}));
 
+  // in-order word times for a word-by-word card: each card word is matched to ITS occurrence in the line (walking forward
+  // from the previous match), then forced monotonic so no word can appear before the one it follows
+  function seq(id, list) {
+    const ws = WJ.lines[id].words; let k = 0, prev = -1e9;
+    return list.map((w) => {
+      let j = k; while (j < ws.length && key(ws[j].w) !== w) j++;
+      if (j >= ws.length) throw new Error("seq: missing " + id + " " + w);
+      k = j + 1; const t = Math.max(ws[j].s - LEAD, prev); prev = t; return t;
+    });
+  }
+  // a correctly formed hand-inked question mark: one hook stroke + a dot, drawn on the boiling doodle layer
+  function qmark(dd, x, y, h, rot, t) {
+    const s = h / 100, R = (px, py) => { const a = rot * Math.PI / 180, dx = px * s, dy = py * s; return `${(x + dx * Math.cos(a) - dy * Math.sin(a)).toFixed(1)} ${(y + dx * Math.sin(a) + dy * Math.cos(a)).toFixed(1)}`; };
+    const hook = path(dd, `M${R(-24, 18)} C ${R(-26, -8)} ${R(26, -12)} ${R(26, 16)} C ${R(26, 36)} ${R(2, 40)} ${R(1, 62)}`, `stroke:${RED};stroke-width:10`);
+    const dot = path(dd, `M${R(1, 86)} L ${R(1.5, 87)}`, `stroke:${RED};stroke-width:13`);
+    draw(hook, t, 0.22); hide(dot); tl.set(dot, { opacity: 1 }, t + 0.24);
+  }
+
   // ---------------------------------------------------------------- S1 a forgotten sin
   (function () {
     const { S, st, dd } = scene("s1", "parch-bg");
@@ -422,7 +440,7 @@
     rise(cg, 0.3, { h: 500, d: 0.45 }); jit(cg, 0.8, t1, 0.8, 11);
     const cgE = $(cg), cgTop = cgE.offsetTop;
     [["never", 300, -95, -8], ["heard", 470, -120, 6], ["of", 640, -95, 10]].forEach(([w, x, dy, r], i) => {
-      const q = hand(st, x - 22, cgTop + dy, 110, "?", { color: RED, transform: `rotate(${r}deg)` }); writeOn(q, T("l1", w), 0.2);
+      qmark(dd, x, cgTop + dy + 20, 78, r, T("l1", w));
     });
     const { strip, LK } = stripFor(st, 1330, 70, 150);
     const tS = T("l1", "simony") - 0.1;
@@ -470,8 +488,7 @@
     const CX = 1010, CY = 190;
     const C = verse(st, CX, CY, 860, "“May your silver perish with you, because you thought you could buy the gift of God with money!”", "Acts 8:20", 52);
     slideIn(C, T("l3", "replied") - 0.1, 500, 1.2);
-    revealAt(C, [T("l3", "may"), T("l3", "your"), T("l3", "silver"), T("l3", "perish"), T("l3", "with"), T("l3", "you"), T("l3", "because"), T("l3", "you", 1), T("l3", "thought"), T("l3", "you", 2), T("l3", "could"),
-      T("l3", "buy"), T("l3", "the"), T("l3", "gift"), T("l3", "of"), T("l3", "god"), T("l3", "with", 1), T("l3", "money")]);
+    revealAt(C, seq("l3", ["may", "your", "silver", "perish", "with", "you", "because", "you", "thought", "you", "could", "buy", "the", "gift", "of", "god", "with", "money"]));
     refAt(C, WE("l3", "money"));
     underlineRun(dd, C, 11, 15, RED, WE("l3", "god") - 0.05);
     const tP = W("l3", "perish");
@@ -493,7 +510,7 @@
     const C = verse(st, CX, CY, 1260, DEF, "Thomas Aquinas, Summa Theologiae II‑II, q. 100, a. 1", 66);
     slideIn(C, T("l4", "definition") - 0.05, 500, -0.8);
     const K = [["simony", 0], ["is", 0], ["an", 0], ["earnest", 0], ["desire", 0], ["to", 0], ["buy", 0], ["or", 0], ["sell", 0], ["something", 0], ["spiritual", 0], ["or", 1], ["something", 1], ["annexed", 0], ["to", 1], ["a", 0], ["spiritual", 1], ["thing", 0]];
-    revealAt(C, K.map(([w, n]) => T("l4", w, n)));
+    revealAt(C, seq("l4", K.map(([w]) => w)));
     refAt(C, W("l4", "thing"));
     underlineRun(dd, C, 2, 4, RED, WE("l4", "desire") - 0.05);
     underlineRun(dd, C, 5, 8, GILT, WE("l4", "sell") - 0.05);
@@ -593,7 +610,7 @@
     const CX = 90, CY = 120;
     const C = verse(st, CX, CY, 900, "“…the worker is worthy of his wages.”", "Luke 10:7", 58);
     slideIn(C, W("l8", "yes", 0, true) - 0.05, -500, -1);
-    revealAt(C, ["the", "worker", "is", "worthy", "of", "his", "wages"].map((w) => T("l8", w)));
+    revealAt(C, seq("l8", ["the", "worker", "is", "worthy", "of", "his", "wages"]));
     refAt(C, WE("l8", "wages"));
     // …but support is not a price
     const pt = cut(st, "s7-tag", "price-tag", 0, 0, 150, `<div class="hand" style="left:${150 * 0.34}px;top:${145 * 0.36}px;font-size:64px;transform:rotate(35deg);color:${INK}">$</div>`);
@@ -653,7 +670,7 @@
     const Q = "What new reformation awaits a church that learns again to discern this sin?";
     const C = verse(st, 210, 390, 1500, Q, "The Doctrine of Simony", 78, true);
     slideIn(C, tW - 0.12, 0, 0);
-    revealAt(C, ["what", "new", "reformation", "awaits", "a", "church", "that", "learns", "again", "to", "discern", "this", "sin"].map((w) => T("l10", w)));
+    revealAt(C, seq("l10", ["what", "new", "reformation", "awaits", "a", "church", "that", "learns", "again", "to", "discern", "this", "sin"]));
     refAt(C, WE("l10", "sin") - 0.1);
     underlineRun(dd, C, 1, 2, RED, W("l10", "reformation", 0, true));
   })();

@@ -55,3 +55,9 @@ Deliverables
 > You can plan and do the entire video autonomously and let me know when the first draft is ready. 4k, no proxies, no need for a portrait version yet (that will come later)
 
 > You don't need to cap it at $3, cap it at $9
+
+## 3. Revision prompts (verbatim)
+
+> Fix these question marks
+
+> 'a' appears before 'awaits' here: "What new reformation awaits a church"

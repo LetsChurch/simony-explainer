@@ -42,3 +42,8 @@ It explains the book's case clearly and fairly. It's an explainer, not a story. 
 ## Notes
 - The book is dedicated to the public domain (CC0); its cover combines two public-domain artworks.
 - "A multibillion-dollar industry" is the book's own phrase for theological education (Christian books and seminaries), Chapter 14.
+
+## Revision 1 (draft review)
+User: "Fix these question marks" and "'a' appears before 'awaits' here: 'What new reformation awaits a church'".
+- Scene 1: the question marks are now single-stroke hand-inked paths (hook + dot) on the boiling doodle layer, drawn on each spoken word.
+- Word-by-word cards now take each word's time from ITS occurrence in the line, walking the aligned words in order, and are forced monotonic (`seq()` in `gen/film-scenes.js`). This fixed the question card's "a" (it was taking the "a" from "is a multibillion", 5.4 s early); every other card was audited and was already correct.
