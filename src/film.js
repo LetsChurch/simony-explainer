@@ -1,0 +1,630 @@
+/* The Doctrine of Simony — paper-collage explainer. One paused timeline, fully seek-safe.
+   (stop-motion helpers carried over from the earlier paper films)
+   Motion language: stop-motion "on twos" (12fps holds) for props & characters,
+   8fps boil on ink lines + cutout jitter, smooth only for the slow camera drift. */
+(function () {
+  const TOTAL = /*TOTAL*/0;
+  const tl = gsap.timeline({ paused: true });
+  const $ = (s) => document.querySelector(s);
+  const $$ = (s) => Array.from(document.querySelectorAll(s));
+
+  // ---------- deterministic helpers ----------
+  function rng(seed) {
+    let s = seed >>> 0;
+    return function () {
+      s = (s + 0x6d2b79f5) >>> 0;
+      let t = s;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  const E = (n) => gsap.parseEase(n);
+  const lerp = (a, b, p) => a + (b - a) * p;
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+  // step-sampled animation: one tl.set per frame (true stop-motion holds)
+  function anim(el, t0, dur, fn, fps) {
+    fps = fps || 12;
+    const n = Math.max(1, Math.round(dur * fps));
+    for (let i = 0; i <= n; i++) tl.set(el, fn(i / n), t0 + (i * dur) / n);
+  }
+  function hide(el, t) { tl.set(el, { opacity: 0 }, t || 0); }
+
+  // pop in from nothing with overshoot (origin set by CSS)
+  function pop(el, t, o) {
+    o = o || {};
+    const d = o.d || 0.42, r = o.r || 0, from = o.from == null ? 0 : o.from;
+    const ez = E(o.ease || "back.out(2.4)");
+    hide(el);
+    anim(el, t, d, (p) => ({ opacity: p > 0 ? 1 : 0, scale: lerp(from, 1, ez(p)), rotation: lerp(r - 10, r, ez(p)) }), o.fps || 12);
+  }
+  // drop from above & squash on landing (origin bottom)
+  function drop(el, t, o) {
+    o = o || {};
+    const h = o.h || 900;
+    hide(el);
+    tl.set(el, { opacity: 1, y: -h }, t);
+    anim(el, t, 0.26, (p) => ({ y: -h * (1 - E("power2.in")(p)) }), 24);
+    anim(el, t + 0.27, 0.34, (p) => {
+      const s = Math.sin(Math.PI * clamp(p * 1.6, 0, 1)) * (1 - p);
+      return { scaleY: 1 - 0.16 * s, scaleX: 1 + 0.12 * s, y: -26 * Math.sin(Math.PI * clamp((p - 0.45) / 0.55, 0, 1)) };
+    }, 12);
+  }
+  // rise from below (origin bottom)
+  function rise(el, t, o) {
+    o = o || {};
+    const h = o.h || 500, d = o.d || 0.5;
+    hide(el);
+    anim(el, t, d, (p) => ({ opacity: p > 0 ? 1 : 0, y: h * (1 - E("back.out(1.7)")(p)) }), 12);
+  }
+  function hop(el, t, h, d) {
+    d = d || 0.4;
+    anim(el, t, d, (p) => ({ y: -(h || 40) * Math.sin(Math.PI * p) }), 12);
+  }
+  // inner jitter: the ".j" wrapper of a cutout boils like hand-placed paper
+  function jitter(el, t0, t1, amp, seed, fps) {
+    const r = rng(seed || 1);
+    fps = fps || 8;
+    amp = amp == null ? 1 : amp;
+    const n = Math.floor((t1 - t0) * fps);
+    for (let i = 0; i <= n; i++) tl.set(el, { x: (r() - 0.5) * 3 * amp, y: (r() - 0.5) * 3 * amp, rotation: (r() - 0.5) * 1.1 * amp }, t0 + i / fps);
+  }
+  function jit(sel, t0, t1, amp, seed) { $$(sel + " > .j").forEach((j, k) => jitter(j, t0, t1, amp, (seed || 1) * 31 + k)); }
+
+  function draw(sel, t, dur, fps) {
+    (typeof sel === "string" ? $$(sel) : [sel]).forEach((p) => {
+      const L = Math.ceil(p.getTotalLength ? p.getTotalLength() : 1000) + 2;
+      const dashed = p.style.strokeDasharray;
+      if (dashed) {
+        // dashed path: reveal by growing a mask-like dashoffset trick is messy — fade-step instead
+        hide(p);
+        anim(p, t, dur, (q) => ({ opacity: q > 0 ? 1 : 0, attr: { "stroke-dashoffset": 0 } }), fps || 12);
+        return;
+      }
+      p.setAttribute("stroke-dasharray", L + " " + L);
+      tl.set(p, { attr: { "stroke-dashoffset": L } }, 0);
+      anim(p, t, dur, (q) => ({ attr: { "stroke-dashoffset": L * (1 - E("power1.inOut")(q)) } }), fps || 12);
+    });
+  }
+  // left-to-right write-on for handwriting blocks
+  function writeOn(el, t, dur) {
+    tl.set(el, { clipPath: "inset(-30% 100% -30% -5%)", opacity: 0 }, 0);
+    tl.set(el, { opacity: 1 }, t + 0.01);
+    anim(el, t, dur, (p) => ({ clipPath: `inset(-30% ${(100 - 105 * p).toFixed(1)}% -30% -5%)` }), 12);
+  }
+  function words(sel, times, o) {
+    o = o || {};
+    $$(sel).forEach((w, i) => {
+      if (times[i] == null) return;
+      hide(w);
+      anim(w, times[i], 0.25, (p) => ({ opacity: p > 0 ? 1 : 0, y: (o.dy || 34) * (1 - E("back.out(2)")(p)), rotation: (o.rot || 4) * (1 - p) }), 12);
+    });
+  }
+  function typeify(root) {
+    const spans = [];
+    (function walk(node) {
+      Array.from(node.childNodes).forEach((c) => {
+        if (c.nodeType === 3) {
+          const frag = document.createDocumentFragment();
+          for (const ch of c.textContent) {
+            const s = document.createElement("span");
+            s.textContent = ch;
+            frag.appendChild(s);
+            spans.push(s);
+          }
+          node.replaceChild(frag, c);
+        } else if (c.nodeType === 1) walk(c);
+      });
+    })(root);
+    return spans;
+  }
+  function typeOut(root, t0, cps) {
+    const spans = typeify(root);
+    spans.forEach((s, i) => tl.set(s, { opacity: 1 }, t0 + i / cps));
+    return t0 + spans.length / cps;
+  }
+  function mk(parent, cls, css, html) {
+    const d = document.createElement("div");
+    d.className = cls;
+    Object.assign(d.style, css || {});
+    if (html != null) d.innerHTML = html;
+    parent.appendChild(d);
+    return d;
+  }
+  const CHECK = (c, s) => `<svg viewBox="0 0 24 24" width="${s}" height="${s}" style="display:block"><path d="M4 13 L9.5 18.5 L20 6" fill="none" stroke="${c}" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  const BANG = (c, s) => `<svg viewBox="0 0 24 24" width="${s}" height="${s}" style="display:block"><path d="M12 4 L12 14" fill="none" stroke="${c}" stroke-width="3.8" stroke-linecap="round"/><circle cx="12" cy="19.5" r="2.2" fill="${c}"/></svg>`;
+
+  // sticky notes
+  const NOTE_COLORS = ["#f7d774", "#f4a9a0", "#f6c28b", "#bfd9ea", "#d5cbef", "#cfe3c4", "#f7d774"];
+  const NOTE_TEXT = ["ALERT!", "review?", "flag #4821", "!!", "urgent", "check ID", "velocity?", "mismatch", "new device", "charge-back", "KYC?", "sanctions hit?", "$$$ ??", "odd login", "PEP?", "dispute", "SAR due", "false alarm?", "help!", "2FA fail", "geo jump", "limit ↑", "again??", "hmm…", "ALERT!", "who's this?", "review!", "flag", "urgent!!", "sus"];
+  function note(parent, n) {
+    const el = mk(parent, "note", { left: n.x - n.w / 2 + "px", top: n.y - n.w / 2 + "px", width: n.w + "px", height: n.w + "px" });
+    const f = mk(el, "face", { backgroundColor: n.color, fontSize: Math.round(n.w * (n.fs || 0.19)) + "px" });
+    f.innerHTML = `<span style="display:block;transform:rotate(${n.trot || -3}deg)">${n.text}</span>`;
+    tl.set(el, { rotation: n.rot }, 0);
+    return el;
+  }
+  function slap(el, t, rot) {
+    hide(el);
+    anim(el, t, 0.12, (p) => ({ opacity: p > 0 ? 1 : 0, scale: lerp(1.45, 1, p), rotation: rot + 14 * (1 - p) }), 24);
+    anim(el, t + 0.13, 0.12, (p) => ({ scale: 1 + 0.035 * Math.sin(Math.PI * p) }), 24);
+  }
+  function coverLayout() {
+    const r = rng(4821);
+    const out = [];
+    let k = 0;
+    for (let row = 0; row < 4; row++)
+      for (let c = 0; c < 7; c++) {
+        out.push({
+          x: c * 300 + 60 + (r() - 0.5) * 30, y: row * 300 + 90 + (r() - 0.5) * 30, w: 404, rot: (r() - 0.5) * 22,
+          color: NOTE_COLORS[Math.floor(r() * 6)], text: NOTE_TEXT[k++ % NOTE_TEXT.length], trot: (r() - 0.5) * 10, fs: 0.2, ord: r(),
+        });
+      }
+    return out.sort((a, b) => a.ord - b.ord);
+  }
+
+  // ransom chips
+  function chip(parent, c) {
+    const el = mk(parent, "chip", { left: c.x + "px", top: c.y + "px", width: c.w + "px", height: c.h + "px" });
+    const f = mk(el, "face", { backgroundColor: c.bg, color: c.fg, fontFamily: c.font, fontSize: c.size + "px", paddingTop: (c.pt || 0) + "px" }, c.ch);
+    if (c.tape) { const tp = document.createElement("img"); tp.src = "assets/img/tape.webp"; Object.assign(tp.style, { position: "absolute", width: Math.round(c.w * 0.62) + "px", left: Math.round(c.w * 0.19) + "px", top: "-18px", transform: `rotate(${c.tape}deg)`, opacity: "0.9" }); el.appendChild(tp); }
+    tl.set(el, { rotation: c.rot || 0 }, 0);
+    return el;
+  }
+  function chipIn(el, t, rot) {
+    hide(el);
+    anim(el, t, 0.16, (p) => ({ opacity: p > 0 ? 1 : 0, scale: lerp(2.1, 1, E("power2.in")(p)), rotation: rot - 22 * (1 - p) }), 24);
+    anim(el, t + 0.17, 0.16, (p) => ({ scale: 1 - 0.06 * Math.sin(Math.PI * p) }), 24);
+  }
+
+  // torn-paper wipe passing through the frame; cover window centred on tCut
+  function wipe(el, halfW, tCut, dir, dur) {
+    dur = dur || 1.2;
+    const total = halfW * 2;
+    el.style.width = total + "px";
+    Array.from(el.querySelectorAll("img")).forEach((i) => (i.style.width = halfW + "px"));
+    tl.set(el, { x: -6000 }, 0);
+    const wr = rng(Math.round(tCut * 100));
+    anim(el, tCut - dur / 2, dur, (p) => {
+      const x = -total - 40 + p * (total + 2000);
+      return { x: dir > 0 ? x : 1920 - total - x, rotation: dir * 1.4 + (wr() - 0.5) * 1.6, y: (wr() - 0.5) * 14 };
+    }, 12);
+    tl.set(el, { x: -6000 }, tCut + dur / 2 + 0.05);
+  }
+
+  function drift(stage, t0, dur, amt) { tl.fromTo(stage, { scale: 1 }, { scale: 1 + (amt || 0.03), duration: dur, ease: "none" }, t0); }
+
+  function build() {
+  // =====================================================================
+  // The Doctrine of Simony — whimsical paper explainer. Every beat is keyed to a force-aligned spoken word
+  // (gen/words.json, injected by gen/build.py); scene cuts come from gen/timing.py.
+  // =====================================================================
+  const WJ = /*WORDS*/null, CUT = /*CUTS*/null;
+  const LEAD = 0.06;                                   // reveals land just before their word
+  const key = (w) => w.toLowerCase().replace(/’/g, "'").replace(/[^a-z']/g, "");
+  function W(id, word, n, end) {
+    let c = 0;
+    for (const x of WJ.lines[id].words) if (key(x.w) === word) { if (c === (n || 0)) return end ? x.e : x.s; c++; }
+    throw new Error("missing word " + id + " " + word + " " + (n || 0));
+  }
+  const T = (id, word, n) => W(id, word, n) - LEAD;     // cue time for a word
+  const WE = (id, word, n) => W(id, word, n, true);
+  const LE = (id) => WJ.lines[id].e;
+  const RATIO = /*RATIO*/null;
+  const IMG = "assets/img/";
+  const RED = "#b9281d", INK = "#201d18", GILT = "#bb8c3f", LAPIS = "#455a63", PARCH = "#eae5d2", GREEN = "#5d6b3a", PURPLE = RED, GOLD = GILT;
+  function scene(id, bg) {
+    const S = $("#" + id);
+    S.innerHTML = `<div class="stage" id="${id}-stage"><div class="bg" style="background-image:url(${IMG}${bg}.webp)"></div><svg class="doodle" id="${id}-dd" viewBox="0 0 1920 1080"></svg></div>`;
+    return { S, st: $("#" + id + "-stage"), dd: $("#" + id + "-dd") };
+  }
+  function cut(parent, id, name, cx, bottom, w, extra) {
+    const h = w * (RATIO[name] || 1);
+    const el = mk(parent, "pp", { left: cx - w / 2 + "px", top: bottom - h + "px", width: w + "px" });
+    el.id = id; el.innerHTML = `<div class="j"><img src="${IMG}${name}.webp" />${extra || ""}</div>`;
+    return "#" + id;
+  }
+  function path(dd, d, style) { const p = document.createElementNS("http://www.w3.org/2000/svg", "path"); p.setAttribute("d", d); if (style) p.setAttribute("style", style); dd.appendChild(p); return p; }
+  function slap(el, t, rot) {
+    hide(el);
+    anim(el, t, 0.14, (p) => ({ opacity: p > 0 ? 1 : 0, scale: lerp(1.5, 1, E("power2.in")(p)), rotation: (rot || 0) + 14 * (1 - p) }), 24);
+    anim(el, t + 0.15, 0.14, (p) => ({ scale: 1 - 0.04 * Math.sin(Math.PI * p) }), 24);
+  }
+  function tagEl(parent, x, y, html, css) {
+    const el = mk(parent, "tag", { left: x + "px", top: y + "px" });
+    mk(el, "face", Object.assign({ fontSize: "30px", color: INK }, css || {}), html);
+    return el;
+  }
+  function hopLoop(sel, t0, t1, h, every) { for (let t = t0; t < t1 - 0.3; t += every) hop(sel, t, h, 0.32); }
+  function hand(parent, x, y, size, txt, css) { return mk(parent, "hand", Object.assign({ left: x + "px", top: y + "px", fontSize: size + "px" }, css || {}), txt); }
+  function stampMark(parent, x, y, txt, color, size, rot) {
+    const m = mk(parent, "mark", { left: x + "px", top: y + "px", color }); m.innerHTML = `<div class="face" style="font-size:${size}px;transform:rotate(${rot}deg);background:rgba(250,246,234,.55)">${txt}</div>`;
+    return m;
+  }
+  function stampIn(m, t) { hide(m); anim(m, t, 0.08, (p) => ({ opacity: 1, scale: lerp(1.4, 1, p) }), 24); }
+  // scripture card (BSB): italic quote whose words appear exactly as they are spoken.
+  // The card is fitted to its laid-out text (balanced lines, even padding) and centred in its slot (x..x+w).
+  function verse(parent, x, y, w, quote, ref, fs, upright) {
+    const PAD = 40;
+    const c = mk(parent, "paper", { left: x + "px", top: y + "px", width: w + "px", padding: `30px ${PAD}px 26px`, borderRadius: "6px", transformOrigin: "50% 50%" });
+    c.innerHTML = `<div class="q" style="font-family:'EB Garamond';font-style:${upright ? 'normal' : 'italic'};font-size:${fs || 46}px;line-height:1.25;color:${INK};text-wrap:balance">${quote.split(" ").map((w) => `<span class="w">${w}</span>`).join(" ")}</div>
+      <div class="ref" style="margin-top:14px;font-family:'Cormorant SC';font-weight:700;font-size:26px;letter-spacing:.1em;color:${RED};white-space:nowrap;display:inline-block">${ref}</div>
+      <img class="tp" src="${IMG}tape.webp" style="position:absolute;top:-18px;width:160px;filter:none;opacity:.9;transform:rotate(-3deg)" />`;
+    const q = c.querySelector(".q"), r = c.querySelector(".ref");
+    const lines = () => Array.from(q.querySelectorAll(".w")).reduce((m, sp) => Math.max(m, sp.offsetLeft + sp.offsetWidth), 0) - q.offsetLeft;
+    let inner = Math.max(lines(), r.offsetWidth);
+    for (let k = 0; k < 3; k++) { c.style.width = Math.ceil(inner) + 2 + 2 * PAD + "px"; const n = Math.max(lines(), r.offsetWidth); if (Math.abs(n - inner) < 1) break; inner = n; }
+    const cw = c.offsetWidth;
+    c.style.left = x + (w - cw) / 2 + "px";
+    c.querySelector(".tp").style.left = cw / 2 - 80 + "px";
+    return c;
+  }
+  const spans = (card) => Array.from(card.querySelectorAll(".w"));
+  function revealAt(card, times, from) { spans(card).slice(from || 0).forEach((s, i) => { if (times[i] != null) tl.set(s, { opacity: 1 }, times[i]); }); }
+  function refAt(card, t) { const r = card.querySelector(".ref"); tl.set(r, { opacity: 0 }, 0); tl.set(r, { opacity: 1 }, t); }
+  // underline a run of card words, measured from the laid-out spans
+  function underline(dd, card, _x0, _y0, i0, i1, color, t) {
+    const x0 = card.offsetLeft, y0 = card.offsetTop;
+    const s = spans(card), a = s[i0]; let b = s[i0];
+    for (let k = i0; k <= i1; k++) if (s[k].offsetTop === a.offsetTop) b = s[k];
+    const xa = x0 + a.offsetLeft + 40 - 40, xb = x0 + b.offsetLeft + b.offsetWidth, y = y0 + a.offsetTop + a.offsetHeight + 2;
+    const p = path(dd, `M${xa} ${y} C ${xa + (xb - xa) * 0.33} ${y - 5} ${xa + (xb - xa) * 0.66} ${y - 4} ${xb} ${y + 2}`, `stroke:${color};stroke-width:9`);
+    draw(p, t, 0.25); return p;
+  }
+  function slideIn(el, t, dx, rot) { hide(el); anim(el, t, 0.35, (p) => ({ opacity: 1, x: dx * (1 - E("power3.out")(p)), rotation: lerp((rot || 0) + 4, rot || 0, p) }), 12); }
+  function fadeOut(el, t, d) { anim(el, t, d || 0.25, (p) => ({ opacity: 1 - p, y: 30 * p }), 12); }
+  function arrowHead(dd, x, y, ang, style, s) { s = s || 22; const a1 = ang + 2.6, a2 = ang - 2.6; return path(dd, `M${x + s * Math.cos(a1)} ${y + s * Math.sin(a1)} L${x} ${y} L${x + s * Math.cos(a2)} ${y + s * Math.sin(a2)}`, style); }
+  function popScene(st, t0, t1) { tl.set(st, { scale: 1.06 }, t0); anim(st, t0, 0.2, (p) => ({ scale: lerp(1.06, 1, p) }), 24); drift(st, t0 + 0.21, t1 - t0 - 0.21, 0.025); }
+  const B = [0].concat(CUT, [TOTAL]);                  // scene bounds
+
+  // ---------------------------------------------------------------- measured title lockup: "The Doctrine of" over SIMONY (+ optional subtitle)
+  // Ink boxes from canvas metrics; every line is centred on the widest line; equal gaps between ink boxes.
+  function lockup(parent, left, top, S, color, sub, subColor) {
+    const cx = document.createElement("canvas").getContext("2d");
+    const ink = (txt, font) => { cx.font = font; const m = cx.measureText(txt); return { w: m.actualBoundingBoxLeft + m.actualBoundingBoxRight, l: m.actualBoundingBoxLeft, a: m.actualBoundingBoxAscent, d: m.actualBoundingBoxDescent }; };
+    const rows = [["The Doctrine of", `400 ${Math.round(S * 0.3)}px 'EB Garamond'`, color], ["SIMONY", `700 ${S}px 'Cormorant SC'`, color]];
+    if (sub) rows.push(["A Theological Retrieval and Appraisal", `italic 400 ${Math.round(S * 0.19)}px 'EB Garamond'`, subColor || color]);
+    const R = rows.map(([t, f, c]) => ({ t, f, c, m: ink(t, f) }));
+    const Wd = Math.max(...R.map((r) => r.m.w)), G = S * 0.13;
+    let y = 0; R.forEach((r) => { r.top = y; y += r.m.a + r.m.d + G; });
+    const H = y - G;
+    const box = mk(parent, "", { position: "absolute", left: left + "px", top: top + "px", width: Wd + "px", height: H + "px" });
+    const lines = R.map((r) => {
+      const h = r.m.a + r.m.d + 2;
+      const d = mk(box, "", { position: "absolute", left: "0px", top: r.top + "px", width: Wd + 4 + "px", height: h + "px" });
+      d.innerHTML = `<svg width="${Wd + 4}" height="${h}" style="display:block;overflow:visible"><text x="${(Wd - r.m.w) / 2 + r.m.l}" y="${r.m.a}" fill="${r.c}" style="font:${r.f}">${r.t}</text></svg>`;
+      return d;
+    });
+    return { box, lines, W: Wd, H };
+  }
+  // torn cream strip sized to a lockup with even padding (tear-cream's torn edges take ~10% of its height top and bottom)
+  function stripFor(parent, cxp, topp, S) {
+    const strip = mk(parent, "pp noshadow", { left: "0px", top: "0px", transformOrigin: "50% 50%" });
+    strip.innerHTML = `<div class="j"></div>`;
+    const sj = strip.querySelector(".j");
+    const LK = lockup(sj, 0, 0, S, INK);
+    const P = LK.H * 0.3, EDGE = 0.1;
+    const SW = LK.W + 2 * P * 1.5, SH = (LK.H + 2 * P) / (1 - 2 * EDGE);
+    Object.assign(strip.style, { left: cxp - SW / 2 + "px", top: topp + "px", width: SW + "px", height: SH + "px" });
+    const bg = document.createElement("img"); bg.src = IMG + "tear-cream.webp";
+    Object.assign(bg.style, { position: "absolute", left: "0px", top: "0px", width: SW + "px", height: SH + "px", filter: "drop-shadow(0 7px 7px rgba(45,35,20,.22))" });
+    sj.insertBefore(bg, sj.firstChild);
+    Object.assign(LK.box.style, { left: (SW - LK.W) / 2 + "px", top: (SH - LK.H) / 2 + "px" });
+    sj.insertAdjacentHTML("beforeend", `<img src="${IMG}tape.webp" style="position:absolute;left:-44px;top:-10px;width:170px;transform:rotate(-26deg);filter:none;opacity:.92" />
+      <img src="${IMG}tape.webp" style="position:absolute;left:${SW - 126}px;top:${SH - 58}px;width:170px;transform:rotate(-24deg);filter:none;opacity:.92" />`);
+    return { strip, LK, SW, SH };
+  }
+  // underline a run of card words across however many lines it wraps onto (measured from the laid-out spans)
+  function underlineRun(dd, card, i0, i1, color, t) {
+    const s = spans(card), x0 = card.offsetLeft, y0 = card.offsetTop, groups = [];
+    for (let k = i0; k <= i1; k++) { const sp = s[k], g = groups[groups.length - 1]; if (g && g.top === sp.offsetTop) g.b = sp; else groups.push({ top: sp.offsetTop, a: sp, b: sp }); }
+    groups.forEach((g, j) => {
+      const xa = x0 + g.a.offsetLeft, xb = x0 + g.b.offsetLeft + g.b.offsetWidth, y = y0 + g.a.offsetTop + g.a.offsetHeight - 2;
+      draw(path(dd, `M${xa} ${y} C ${xa + (xb - xa) * 0.33} ${y - 5} ${xa + (xb - xa) * 0.66} ${y - 3} ${xb} ${y + 2}`, `stroke:${color};stroke-width:8`), t + j * 0.16, 0.2);
+    });
+  }
+  const sc = (txt, size, ls) => `<span style="font-family:'Cormorant SC';font-weight:700;letter-spacing:${ls == null ? 0.06 : ls}em;font-size:${size}px">${txt}</span>`;
+  // coloured clause chip for the definition's four parts
+  function chipEl(parent, x, y, txt, bg, fg) { return tagEl(parent, x, y, sc(txt, 44), { padding: "8px 26px", backgroundColor: bg, color: fg || PARCH }); }
+  // lay chips out in one centred row; returns their x positions
+  function rowX(widths, gap, cx) { const tot = widths.reduce((a, b) => a + b, 0) + gap * (widths.length - 1); let x = cx - tot / 2; return widths.map((w) => { const r = x; x += w + gap; return r; }); }
+  function dim(el, t, to) { anim(el, t, 0.25, (p) => ({ opacity: 1 - (1 - (to == null ? 0.3 : to)) * p }), 12); }
+  function coin(parent, x, y, s) { return mk(parent, "", { position: "absolute", left: x + "px", top: y + "px", width: s + "px", height: s + "px", borderRadius: "50%", background: `radial-gradient(circle at 35% 35%, #e7c46e, ${GILT} 60%, #8a6526)`, border: "3px solid #7a5a22", boxSizing: "border-box", boxShadow: "0 3px 4px rgba(45,35,20,.3)" }); }
+  const lab = (parent, cx, y, w, txt, size, css) => hand(parent, cx - w / 2, y, size || 46, txt, Object.assign({ width: w + "px", textAlign: "center" }, css || {}));
+
+  // ---------------------------------------------------------------- S1 a forgotten sin
+  (function () {
+    const { S, st, dd } = scene("s1", "parch-bg");
+    const t1 = B[1];
+    drift(st, 0, t1, 0.03);
+    draw(path(dd, "M40 935 C 420 925 760 943 1060 931 S 1600 939 1880 929"), 0.05, 0.6);
+    const cg = cut(st, "s1-cg", "churchgoers", 470, 935, 470);
+    rise(cg, 0.3, { h: 500, d: 0.45 }); jit(cg, 0.8, t1, 0.8, 11);
+    const cgE = $(cg), cgTop = cgE.offsetTop;
+    [["never", 300, -95, -8], ["heard", 470, -120, 6], ["of", 640, -95, 10]].forEach(([w, x, dy, r], i) => {
+      const q = hand(st, x - 22, cgTop + dy, 110, "?", { color: RED, transform: `rotate(${r}deg)` }); writeOn(q, T("l1", w), 0.2);
+    });
+    const { strip, LK } = stripFor(st, 1330, 70, 150);
+    const tS = T("l1", "simony") - 0.1;
+    hide(strip);
+    anim(strip, tS, 0.14, (p) => ({ opacity: 1, scale: lerp(1.3, 1, p), rotation: lerp(6, -1.5, p) }), 24);
+    anim(strip, tS + 0.15, 0.12, (p) => ({ scale: 1 - 0.03 * Math.sin(Math.PI * p), rotation: -1.5 }), 24);
+    tl.set(LK.lines[0], { opacity: 0 }, 0); tl.set(LK.lines[0], { opacity: 1 }, tS + 0.12);
+    writeOn(LK.lines[1], T("l1", "simony"), 0.35);
+    const tm = cut(st, "s1-tomes", "tomes", 1450, 935, 240);
+    pop(tm, T("l1", "centuries") - 0.1, { d: 0.45 }); jit(tm, W("l1", "centuries") + 0.4, t1, 0.6, 12);
+    [["canon law", 1010, 600, -4, "few"], ["the schoolmen", 1590, 650, 4, "church"], ["Reformation confessions", 840, 790, 3, "widely"]].forEach(([txt, x, y, r, w]) => {
+      const g = tagEl(st, x, y, sc(txt, 34), { padding: "8px 20px" }); tl.set(g, { rotation: r }, 0); slap(g, T("l1", w) - 0.04, r);
+    });
+    draw(path(dd, "M905 110 L905 72 M886 91 L924 91 M1760 330 L1782 298 M1790 348 L1826 340", `stroke:${RED};stroke-width:6`), T("l1", "simony") + 0.45, 0.25);
+  })();
+
+  // ---------------------------------------------------------------- S2 Acts 8: Simon the sorcerer (BSB)
+  (function () {
+    const { S, st, dd } = scene("s2", "vellum-bg");
+    const t0 = B[1], t1 = B[2];
+    popScene(st, t0, t1);
+    const pe = cut(st, "s2-peter", "peter", 330, 1010, 300);
+    rise(pe, t0 + 0.15, { h: 600, d: 0.45 }); jit(pe, t0 + 0.7, t1, 0.6, 21);
+    const si = cut(st, "s2-simon", "simon", 770, 1010, 470);
+    const tSim = T("l2", "simon");
+    hide(si); anim(si, tSim - 0.35, 0.4, (p) => ({ opacity: 1, x: 700 * (1 - E("power3.out")(p)) }), 12); jit(si, tSim + 0.1, t1, 0.6, 22);
+    const siE = $(si), bagX = siE.offsetLeft + 0.06 * siE.offsetWidth, bagY = siE.offsetTop + 0.31 * siE.offsetWidth * RATIO.simon;
+    const ac = tagEl(st, 640, 70, sc("Acts 8", 44, 0.14), { padding: "8px 26px", color: PARCH, backgroundColor: RED }); tl.set(ac, { rotation: -3 }, 0); slap(ac, T("l2", "named") - 0.04, -3);
+    const sn = hand(st, 600, 300, 64, "Simon the sorcerer", { color: INK, transform: "rotate(-4deg)" }); writeOn(sn, T("l2", "simon"), 0.5);
+    // the Spirit given through the apostles' hands
+    const dv = cut(st, "s2-dove", "dove", 0, 0, 130); const tSp = T("l2", "spirit") - 0.3;   // anchored at (0,0): x/y place its bottom-centre
+    tl.set(dv, { x: 250, y: -100, opacity: 0 }, 0); tl.set(dv, { opacity: 1 }, tSp);
+    anim(dv, tSp, 0.6, (p) => { const q = E("power2.out")(p); return { x: lerp(250, 285, q), y: lerp(-100, 250, q), rotation: 6 * Math.sin(p * 9) }; }, 12);
+    jit(dv, tSp + 0.65, t1, 0.8, 23);
+    const R = []; for (let i = 0; i < 9; i++) { const a = Math.PI * (-0.08 + 1.16 * i / 8); R.push(`M${285 + 118 * Math.cos(a)} ${150 + 105 * Math.sin(a)} L${285 + 168 * Math.cos(a)} ${150 + 150 * Math.sin(a)}`); }
+    draw(path(dd, R.join(" "), `stroke:${GILT};stroke-width:6`), T("l2", "given"), 0.3);
+    const ah = hand(st, 60, 330, 48, "the apostles' hands", { color: LAPIS, transform: "rotate(-3deg)" }); writeOn(ah, T("l2", "apostles'"), 0.4);
+    // …and offered them money
+    const tM = T("l2", "offered");
+    const sp = path(dd, `M${bagX - 60} ${bagY - 40} L${bagX - 90} ${bagY - 70} M${bagX - 70} ${bagY + 10} L${bagX - 110} ${bagY + 12} M${bagX - 50} ${bagY + 60} L${bagX - 80} ${bagY + 90}`, `stroke:${GILT};stroke-width:6`); draw(sp, tM, 0.2);
+    const coins = [[-70, 70, 44], [-20, 95, 38], [-110, 110, 40]].map(([dx, dy, s], i) => { const c = coin(st, bagX + dx, bagY + dy, s); pop(c, W("l2", "money") - 0.1 + i * 0.07, { d: 0.25 }); return c; });
+    // Peter's rebuke, Acts 8:20
+    const pt = tagEl(st, 150, 300, sc("Peter", 40, 0.1), { padding: "6px 22px" }); tl.set(pt, { rotation: 3 }, 0); slap(pt, T("l3", "peter") - 0.04, 3);
+    fadeOut(ah, T("l3", "peter") - 0.2, 0.2);
+    const CX = 1010, CY = 190;
+    const C = verse(st, CX, CY, 860, "“May your silver perish with you, because you thought you could buy the gift of God with money!”", "Acts 8:20", 52);
+    slideIn(C, T("l3", "replied") - 0.1, 500, 1.2);
+    revealAt(C, [T("l3", "may"), T("l3", "your"), T("l3", "silver"), T("l3", "perish"), T("l3", "with"), T("l3", "you"), T("l3", "because"), T("l3", "you", 1), T("l3", "thought"), T("l3", "you", 2), T("l3", "could"),
+      T("l3", "buy"), T("l3", "the"), T("l3", "gift"), T("l3", "of"), T("l3", "god"), T("l3", "with", 1), T("l3", "money")]);
+    refAt(C, WE("l3", "money"));
+    underlineRun(dd, C, 11, 15, RED, WE("l3", "god") - 0.05);
+    const tP = W("l3", "perish");
+    coins.forEach((c, i) => anim(c, tP + i * 0.06, 0.55, (p) => ({ y: 520 * E("power2.in")(p), rotation: (i - 1) * 140 * p }), 12));
+    anim(si, tP, 0.3, (p) => ({ x: 26 * Math.sin(Math.PI * Math.min(1, p * 1.2)) }), 12);
+  })();
+
+  // ---------------------------------------------------------------- S3 the classic definition (Aquinas)
+  const DEF = "Simony is an earnest desire to buy or sell something spiritual or something annexed to a spiritual thing.";
+  (function () {
+    const { S, st, dd } = scene("s3", "parch-bg");
+    const t0 = B[2], t1 = B[3];
+    drift(st, t0, t1 - t0, 0.02);
+    const aq = cut(st, "s3-aq", "aquinas", 300, 1010, 290);
+    rise(aq, Math.min(t0 + 0.2, T("l4", "thomas") - 0.3), { h: 600, d: 0.45 }); jit(aq, t0 + 0.8, t1, 0.8, 31);
+    const nm = tagEl(st, 120, 380, sc("Thomas Aquinas", 40, 0.06), { padding: "8px 24px", color: PARCH, backgroundColor: INK }); tl.set(nm, { rotation: -3 }, 0); slap(nm, T("l4", "thomas") - 0.04, -3);
+    const cd = hand(st, 690, 215, 60, "the classic definition", { color: RED, transform: "rotate(-2deg)" }); writeOn(cd, T("l4", "classic"), 0.5);
+    const CX = 600, CY = 330;
+    const C = verse(st, CX, CY, 1260, DEF, "Thomas Aquinas, Summa Theologiae II‑II, q. 100, a. 1", 66);
+    slideIn(C, T("l4", "definition") - 0.05, 500, -0.8);
+    const K = [["simony", 0], ["is", 0], ["an", 0], ["earnest", 0], ["desire", 0], ["to", 0], ["buy", 0], ["or", 0], ["sell", 0], ["something", 0], ["spiritual", 0], ["or", 1], ["something", 1], ["annexed", 0], ["to", 1], ["a", 0], ["spiritual", 1], ["thing", 0]];
+    revealAt(C, K.map(([w, n]) => T("l4", w, n)));
+    refAt(C, W("l4", "thing"));
+    underlineRun(dd, C, 2, 4, RED, WE("l4", "desire") - 0.05);
+    underlineRun(dd, C, 5, 8, GILT, WE("l4", "sell") - 0.05);
+    underlineRun(dd, C, 9, 10, LAPIS, WE("l4", "spiritual") - 0.05);
+    underlineRun(dd, C, 12, 17, GREEN, W("l4", "thing") - 0.05);
+  })();
+
+  // ---------------------------------------------------------------- S4 something spiritual / something annexed
+  (function () {
+    const { S, st, dd } = scene("s4", "parch-bg");
+    const t0 = B[3], t1 = B[4];
+    popScene(st, t0, t1);
+    const c1 = chipEl(st, 0, 80, "something spiritual", LAPIS), c2 = chipEl(st, 0, 80, "something annexed", GREEN);
+    const [x1, x2] = rowX([c1.offsetWidth, c2.offsetWidth], 40, 960);
+    c1.style.left = x1 + "px"; c2.style.left = x2 + "px";
+    tl.set(c1, { rotation: -2 }, 0); slap(c1, T("l5", "something") - 0.04, -2);
+    tl.set(c2, { rotation: 2 }, 0); slap(c2, T("l5", "annexed") - 0.04, 2);
+    const ITEMS = [["mitre", 250, 190, "church offices", "church"], ["chalice", 610, 210, "sacraments", "sacraments"], ["praying", 965, 160, "prayer", "prayer"], ["pulpit", 1320, 175, "preaching", "preaching"], ["codex", 1680, 320, "teaching", "teaching"]];
+    const els = ITEMS.map(([n, cx, w, label, word], i) => {
+      const t = T("l5", word);
+      const el = cut(st, "s4-" + n, n, cx, 680, w); tl.set(el, { transformOrigin: "50% 50%" }, 0); slap($(el), t - 0.04, [-4, 3, -2, 3, -3][i]); jit(el, t + 0.3, t1, 0.6, 41 + i);
+      const lb = lab(st, cx, 700, 340, label, 48); writeOn(lb, t + 0.02, 0.35);
+      return [$(el), lb];
+    });
+    const nj = hand(st, 70, 230, 54, "not just…", { color: RED, transform: "rotate(-5deg)" }); writeOn(nj, T("l5", "not"), 0.3);
+    // annexed: the income joined to an office
+    const tA = T("l5", "annexed");
+    els.slice(1).forEach(([el, lb]) => { dim(el, tA, 0.28); dim(lb, tA, 0.28); });
+    dim(nj, tA, 0);
+    const pu = cut(st, "s4-purse", "purse", 560, 1020, 180);
+    pop(pu, T("l5", "joined") - 0.05, { d: 0.35 }); jit(pu, W("l5", "joined") + 0.3, t1, 0.6, 47);
+    const ch = path(dd, "M270 760 C 300 840 380 900 470 925", `stroke:${INK};stroke-width:6;stroke-dasharray:14 12`); draw(ch, T("l5", "joined"), 0.3);
+    const tp = document.createElement("img"); tp.src = IMG + "tape.webp"; Object.assign(tp.style, { position: "absolute", left: "435px", top: "885px", width: "120px", transform: "rotate(28deg)", opacity: "0" }); st.appendChild(tp);
+    tl.set(tp, { opacity: 0.92 }, W("l5", "joined") + 0.2);
+    const oi = hand(st, 720, 910, 58, "an office's income", { color: GREEN, transform: "rotate(-3deg)" }); writeOn(oi, T("l5", "office's"), 0.45);
+  })();
+
+  // ---------------------------------------------------------------- S5 to buy or sell · an earnest desire
+  (function () {
+    const { S, st, dd } = scene("s5", "vellum-bg");
+    const t0 = B[4], t1 = B[5];
+    popScene(st, t0, t1);
+    const c1 = chipEl(st, 0, 80, "to buy or sell", GILT, INK), c2 = chipEl(st, 0, 80, "an earnest desire", RED);
+    const [x1, x2] = rowX([c1.offsetWidth, c2.offsetWidth], 40, 960);
+    c1.style.left = x1 + "px"; c2.style.left = x2 + "px";
+    tl.set(c1, { rotation: -2 }, 0); slap(c1, T("l6", "both") - 0.04, -2);
+    tl.set(c2, { rotation: 2 }, 0); slap(c2, T("l6", "begins") - 0.04, 2);
+    const hc = cut(st, "s5-hc", "hand-coins", 440, 600, 560); const hd = cut(st, "s5-hd", "hand-dove", 1480, 610, 560);
+    slideIn($(hc), T("l6", "buyer") - 0.3, -700, 0); slideIn($(hd), T("l6", "seller") - 0.3, 700, 0);
+    jit(hc, W("l6", "buyer") + 0.2, t1, 0.6, 51); jit(hd, W("l6", "seller") + 0.2, t1, 0.6, 52);
+    const lb1 = lab(st, 440, 630, 400, "buyer", 64, { color: INK }); writeOn(lb1, T("l6", "buyer"), 0.3);
+    const lb2 = lab(st, 1480, 640, 400, "seller", 64, { color: INK }); writeOn(lb2, T("l6", "seller"), 0.3);
+    const tG = T("l6", "guilty");
+    const m1 = stampMark(st, 290, 330, "GUILTY", RED, 62, -9); stampIn(m1, tG - 0.02);
+    const m2 = stampMark(st, 1330, 320, "GUILTY", RED, 62, 7); stampIn(m2, tG + 0.12);
+    const tAnd = T("l6", "and", 1);
+    [$(hc), $(hd), lb1, lb2, m1, m2].forEach((el) => fadeOut(el, tAnd, 0.25));
+    const ht = cut(st, "s5-heart", "heart", 960, 700, 340); pop(ht, T("l6", "sin") - 0.05, { d: 0.4 }); jit(ht, W("l6", "sin") + 0.4, t1, 0.8, 53);
+    const iw = hand(st, 1160, 450, 64, "in the will", { color: RED, transform: "rotate(-4deg)" }); writeOn(iw, T("l6", "will"), 0.35);
+    draw(path(dd, "M1150 505 C 1110 520 1100 540 1100 560 M1085 540 L1100 566 L1118 544", `stroke:${RED};stroke-width:6`), W("l6", "will", 0, true), 0.2);
+    const wh = lab(st, 960, 760, 1300, "whether or not money changes hands", 66, { color: INK }); writeOn(wh, T("l6", "whether"), 1.0);
+  })();
+
+  // ---------------------------------------------------------------- S6 fathers, schoolmen, Reformation
+  (function () {
+    const { S, st, dd } = scene("s6", "parch-bg");
+    const t0 = B[5], t1 = B[6];
+    drift(st, t0, t1 - t0, 0.02);
+    const dec = mk(st, "", { position: "absolute", left: "0px", top: "-40px", width: "1920px", height: "1043px", backgroundImage: `url(${IMG}decretum.jpg)`, backgroundSize: "cover", opacity: "0.2", mixBlendMode: "multiply", WebkitMaskImage: "radial-gradient(ellipse 60% 55% at 50% 42%, #000 35%, transparent 100%)", maskImage: "radial-gradient(ellipse 60% 55% at 50% 42%, #000 35%, transparent 100%)" });
+    draw(path(dd, "M40 902 C 420 894 760 910 1060 900 S 1600 906 1880 898", `stroke:${INK};stroke-width:5;stroke-dasharray:18 16`), t0 + 0.1, 0.5);
+    const F = [["father", 300, 210, "the fathers", "church", "fathers", "condemned it", "condemned", 190, 350],
+               ["aquinas", 760, 240, "the schoolmen", "medieval", "schoolmen", "defined it", "defined", 650, 380],
+               ["reformer", 1210, 210, "the Reformation", "reformation", "reformation", null, null, 0, 0]];
+    F.forEach(([n, cx, w, label, wr, wl, note, wn, nx, ny], i) => {
+      const el = cut(st, "s6-" + n, n, cx, 900, w); rise(el, T("l7", wr) - 0.25, { h: 600, d: 0.4 }); jit(el, W("l7", wr) + 0.3, t1, 0.8, 61 + i);
+      const tg = tagEl(st, 0, 918, sc(label, 36), { padding: "6px 20px" }); tg.style.left = cx - tg.offsetWidth / 2 + "px";
+      tl.set(tg, { rotation: [-2, 2, -1][i] }, 0); slap(tg, T("l7", wl) + 0.02, [-2, 2, -1][i]);
+      if (note) { const h = hand(st, nx, ny, 60, note, { color: RED, transform: "rotate(-4deg)" }); writeOn(h, T("l7", wn), 0.4); }
+    });
+    const yr = hand(st, 1060, 360, 52, "1517", { color: LAPIS, transform: "rotate(-6deg)" }); writeOn(yr, T("l7", "itself"), 0.3);
+    const ind = cut(st, "s6-ind", "indulgence", 1540, 880, 200); tl.set(ind, { transformOrigin: "50% 50%" }, 0); slap($(ind), T("l7", "dispute") - 0.04, 5); jit(ind, W("l7", "dispute") + 0.3, t1, 0.6, 64);
+    const cf = cut(st, "s6-coffer", "coffer", 1770, 900, 200); pop(cf, T("l7", "sale") - 0.08, { d: 0.35 }); jit(cf, W("l7", "sale") + 0.3, t1, 0.6, 65);
+    const it = tagEl(st, 0, 918, sc("indulgences", 36), { padding: "6px 20px", color: PARCH, backgroundColor: RED }); it.style.left = 1650 - it.offsetWidth / 2 + "px";
+    tl.set(it, { rotation: 2 }, 0); slap(it, T("l7", "spiritual") - 0.04, 2);
+    const d1 = hand(st, 1290, 230, 58, "a dispute over the sale", { color: INK, transform: "rotate(-3deg)" }); writeOn(d1, T("l7", "dispute"), 0.55);
+    const d2 = hand(st, 1350, 300, 58, "of spiritual things", { color: INK, transform: "rotate(-3deg)" }); writeOn(d2, T("l7", "of"), 0.45);
+  })();
+
+  // ---------------------------------------------------------------- S7 support, not a price (BSB Luke 10:7)
+  (function () {
+    const { S, st, dd } = scene("s7", "parch-bg");
+    const t0 = B[6], t1 = B[7];
+    popScene(st, t0, t1);
+    const mn = cut(st, "s7-min", "minister", 1420, 1010, 225); rise(mn, T("l8", "ministers") - 0.3, { h: 600, d: 0.45 }); jit(mn, W("l8", "ministers") + 0.2, t1, 0.8, 71);
+    const su = hand(st, 1560, 470, 64, "supported?", { color: INK, transform: "rotate(-4deg)" }); writeOn(su, T("l8", "supported"), 0.4);
+    const ys = stampMark(st, 1590, 560, "YES", LAPIS, 70, -7); stampIn(ys, T("l8", "yes") - 0.02);
+    const CX = 90, CY = 120;
+    const C = verse(st, CX, CY, 900, "“…the worker is worthy of his wages.”", "Luke 10:7", 58);
+    slideIn(C, W("l8", "yes", 0, true) - 0.05, -500, -1);
+    revealAt(C, ["the", "worker", "is", "worthy", "of", "his", "wages"].map((w) => T("l8", w)));
+    refAt(C, WE("l8", "wages"));
+    // …but support is not a price
+    const pt = cut(st, "s7-tag", "price-tag", 0, 0, 150, `<div class="hand" style="left:${150 * 0.34}px;top:${145 * 0.36}px;font-size:64px;transform:rotate(35deg);color:${INK}">$</div>`);
+    tl.set(pt, { x: 1080 + 75, y: 560 + 145, transformOrigin: "22% 12%" }, 0);
+    const tB = T("l8", "but");
+    hide(pt); anim(pt, tB, 0.4, (p) => ({ opacity: 1, y: 560 + 145 - 500 * (1 - E("back.out(1.4)")(p)) }), 12);
+    anim(pt, tB + 0.4, 1.6, (p) => ({ rotation: 9 * Math.sin(p * Math.PI * 3) * (1 - p) }), 12);
+    const X = path(dd, "M1085 570 L1235 720 M1235 570 L1085 720", `stroke:${RED};stroke-width:13`); draw(X, T("l8", "not") - 0.03, 0.2);
+    // honor from the people, wages from God
+    const tF = T("l9", "from");
+    [su, ys].forEach((el) => fadeOut(el, tF - 0.1, 0.25));
+    anim(pt, tF - 0.1, 0.3, (p) => ({ opacity: 1 - p })); anim(X, tF - 0.1, 0.3, (p) => ({ opacity: 1 - p }), 12);
+    const gv = cut(st, "s7-givers", "givers", 380, 1010, 370); rise(gv, T("l9", "people") - 0.35, { h: 600, d: 0.45 }); jit(gv, W("l9", "people") + 0.2, t1, 0.8, 72);
+    const mE = $(mn), gE = $(gv);
+    const ax0 = gE.offsetLeft + gE.offsetWidth + 20, ax1 = mE.offsetLeft - 20, ay = 760;
+    draw(path(dd, `M${ax0} ${ay} C ${ax0 + 180} ${ay - 70} ${ax1 - 180} ${ay - 70} ${ax1} ${ay}`, `stroke:${GILT};stroke-width:8`), T("l9", "minister") - 0.05, 0.4);
+    draw(arrowHead(dd, ax1, ay, Math.atan2(40, 90), `stroke:${GILT};stroke-width:8`), W("l9", "minister") + 0.3, 0.1);
+    const ho = mk(st, "", { position: "absolute", left: (ax0 + ax1) / 2 - 150 + "px", width: "300px", textAlign: "center", top: ay - 150 + "px", fontFamily: "'EB Garamond'", fontStyle: "italic", fontSize: "62px", color: "#8a6526" }, "honor"); writeOn(ho, T("l9", "honor"), 0.35);
+    const np = mk(st, "", { position: "absolute", left: (ax0 + ax1) / 2 - 250 + "px", width: "500px", textAlign: "center", top: ay + 20 + "px", fontFamily: "Caveat", fontWeight: "700", fontSize: "54px", color: RED }, "not a price for his labor"); writeOn(np, T("l9", "not"), 0.55);
+    // GOD above the minister, rays and arrow from the measured card
+    const god = tagEl(st, 0, 130, sc("GOD", 64, 0.16), { padding: "12px 38px" });
+    const gw = god.offsetWidth, gh = god.offsetHeight, gcx = mE.offsetLeft + mE.offsetWidth / 2;
+    god.style.left = gcx - gw / 2 + "px";
+    const gy = 130 + gh / 2, tGod = T("l9", "god");
+    slap(god, tGod - 0.04, 0);
+    const rx0 = gw / 2 + 24, ry0 = gh / 2 + 20, rx1 = rx0 + 44, ry1 = ry0 + 30, Rr = [];
+    for (let i = 0; i < 12; i++) { const a = Math.PI * 2 * i / 12 - Math.PI / 2; if (Math.abs(Math.cos(a)) > 0.97) continue; Rr.push(`M${gcx + rx0 * Math.cos(a)} ${gy + ry0 * Math.sin(a)} L${gcx + rx1 * Math.cos(a)} ${gy + ry1 * Math.sin(a)}`); }
+    draw(path(dd, Rr.join(" "), `stroke:${GILT};stroke-width:6`), tGod + 0.1, 0.3);
+    const vy0 = 130 + gh + ry1 - ry0 + 22, vy1 = mE.offsetTop - 16;
+    draw(path(dd, `M${gcx} ${vy0} C ${gcx + 14} ${vy0 + (vy1 - vy0) * 0.4} ${gcx - 10} ${vy0 + (vy1 - vy0) * 0.7} ${gcx} ${vy1}`, `stroke:${LAPIS};stroke-width:8`), T("l9", "receives", 1) - 0.05, 0.35);
+    draw(arrowHead(dd, gcx, vy1, Math.PI / 2, `stroke:${LAPIS};stroke-width:8`), W("l9", "receives", 1) + 0.25, 0.1);
+    const wg = mk(st, "", { position: "absolute", left: gcx + 30 + "px", top: (vy0 + vy1) / 2 - 36 + "px", fontFamily: "'EB Garamond'", fontStyle: "italic", fontSize: "62px", color: LAPIS }, "wages"); writeOn(wg, T("l9", "wages"), 0.35);
+    const te = hand(st, gcx - 430, 300, 54, "his true employer", { color: INK, transform: "rotate(-3deg)" }); writeOn(te, T("l9", "employer"), 0.45);
+  })();
+
+  // ---------------------------------------------------------------- S8 today · what new reformation?
+  (function () {
+    const { S, st, dd } = scene("s8", "parch-bg");
+    const t0 = B[7], t1 = B[8];
+    drift(st, t0, t1 - t0, 0.02);
+    const hd = lab(st, 960, 120, 1600, "a multibillion-dollar industry", 92, { color: RED, transform: "rotate(-2deg)" }); writeOn(hd, T("l10", "multibillion"), 0.8);
+    const IT = [["books", 440, 300, "Christian books", "selling"], ["ticket", 960, 400, "conferences", "theological"], ["gradcap", 1480, 290, "seminaries", "instruction"]];
+    const els = [];
+    IT.forEach(([n, cx, w, label, word], i) => {
+      const t = T("l10", word), bot = 720;
+      const el = cut(st, "s8-" + n, n, cx, bot, w); tl.set(el, { transformOrigin: "50% 50%" }, 0); slap($(el), t - 0.04, [-3, 2, 3][i]); jit(el, t + 0.3, t1, 0.6, 81 + i);
+      const lb = lab(st, cx, bot + 16, 420, label, 56); writeOn(lb, t + 0.05, 0.4);
+      const h = w * RATIO[n];
+      const tg = cut(st, "s8-tag" + i, "price-tag", 0, 0, 110, `<div class="hand" style="left:${110 * 0.34}px;top:${107 * 0.36}px;font-size:48px;transform:rotate(35deg);color:${INK}">$</div>`);
+      tl.set(tg, { x: cx + w / 2 - 70 + 55, y: bot - h + 20 + 107, transformOrigin: "22% 12%" }, 0);
+      hide(tg); anim(tg, t + 0.25, 0.3, (p) => ({ opacity: 1, rotation: 30 * (1 - E("back.out(2)")(p)) }), 12);
+      els.push($(el), lb, $(tg));
+    });
+    // the book's question
+    const tW = T("l10", "what");
+    els.forEach((el) => fadeOut(el, tW - 0.35, 0.28));
+    const Q = "What new reformation awaits a church that learns again to discern this sin?";
+    const C = verse(st, 210, 390, 1500, Q, "The Doctrine of Simony", 78, true);
+    slideIn(C, tW - 0.12, 0, 0);
+    revealAt(C, ["what", "new", "reformation", "awaits", "a", "church", "that", "learns", "again", "to", "discern", "this", "sin"].map((w) => T("l10", w)));
+    refAt(C, WE("l10", "sin") - 0.1);
+    underlineRun(dd, C, 1, 2, RED, W("l10", "reformation", 0, true));
+  })();
+
+  // ---------------------------------------------------------------- S9 the book
+  (function () {
+    const { S, st, dd } = scene("s9", "lapis-bg");
+    const t0 = B[8], t1 = B[9];
+    popScene(st, t0, t1);
+    const cv = mk(st, "pp", { left: "250px", top: "120px", width: "440px", transformOrigin: "50% 50%" });
+    cv.innerHTML = `<div class="j"><div style="padding:10px;background:#f6f2e6;box-shadow:0 14px 20px rgba(10,15,20,.45)"><img src="${IMG}cover.jpg" style="width:420px;display:block;filter:none" /></div>
+      <img src="${IMG}tape.webp" style="position:absolute;left:140px;top:-20px;width:170px;filter:none;opacity:.92;transform:rotate(4deg)" /></div>`;
+    const tT = T("l11", "the");
+    tl.set(cv, { rotation: -3 }, 0); pop(cv, Math.max(t0 + 0.2, tT - 0.1), { d: 0.45, r: -3 }); jitter(cv.querySelector(".j"), tT + 0.5, t1, 0.5, 91);
+    const EX = 820;
+    const EK = lockup(st, EX, 150, 150, PARCH, true, "#d8dfe2");
+    tl.set(EK.lines[0], { opacity: 0 }, 0); tl.set(EK.lines[0], { opacity: 1 }, tT);
+    writeOn(EK.lines[1], T("l11", "simony"), 0.35);
+    writeOn(EK.lines[2], WE("l11", "simony"), 0.5);
+    const ey = 150 + EK.H;
+    const by = mk(st, "", { position: "absolute", left: EX + "px", width: EK.W + "px", textAlign: "center", top: ey + 28 + "px", fontFamily: "'EB Garamond'", fontStyle: "italic", fontSize: "50px", color: PARCH }, "by Conley Owens"); writeOn(by, T("l11", "by"), 0.45);
+    const CH = [["Read it", T("l11", "read")], ["Free", T("l11", "free")], ["Public domain", W("l11", "free", 0, true) + 0.15]];
+    const chips = CH.map(([t]) => tagEl(st, 0, ey + 130, t, { fontSize: "38px", fontWeight: "700", padding: "10px 26px" }));
+    const xs = rowX(chips.map((c) => c.offsetWidth), 26, EX + EK.W / 2);
+    chips.forEach((c, i) => { c.style.left = xs[i] + "px"; tl.set(c, { rotation: [-3, 2, -2][i] }, 0); slap(c, CH[i][1] - 0.04, [-3, 2, -2][i]); });
+    const url = tagEl(st, 0, ey + 250, `simony.info`, { fontSize: "60px", fontWeight: "750", padding: "16px 38px", backgroundColor: PARCH, color: INK });
+    url.style.left = EX + EK.W / 2 - url.offsetWidth / 2 + "px";
+    tl.set(url, { rotation: 2 }, 0); slap(url, T("l11", "simony", 1) - 0.04, 2);
+    const dv = cut(st, "s9-dove", "dove", 0, 0, 150); const tD = WE("l11", "info") - 0.7;
+    tl.set(dv, { x: 2000, y: 200, opacity: 0 }, 0); tl.set(dv, { opacity: 1 }, tD);
+    anim(dv, tD, 2.4, (p) => { const q = E("power2.out")(p); return { x: lerp(1950, 1700, q), y: lerp(200, 330, q) - 30 * Math.sin(Math.PI * p * 2), rotation: -6 * Math.sin(p * 12) }; }, 12);
+    const vv = mk(st, "", { position: "absolute", left: "0", width: "1920px", textAlign: "center", top: "925px", fontFamily: "'EB Garamond'", fontStyle: "italic", fontSize: "44px", color: PARCH },
+      `“Freely you have received; freely give.” <span style="font-style:normal;font-family:'Cormorant SC';font-weight:700;font-size:30px;letter-spacing:.1em;opacity:.85">&nbsp; Matthew 10:8</span>`);
+    hide(vv); anim(vv, LE("l11") + 0.4, 0.8, (p) => ({ opacity: p }), 12);
+  })();
+
+  $$(".stage").forEach((st) => { const dd = st.querySelector("svg.doodle"); if (dd) st.appendChild(dd); });
+  // ---------------------------------------------------------------- transitions & texture (torn-paper wipes centred on the cuts)
+  wipe($("#w1"), 1451 * 1260 / 1080, B[2], 1, 1.2);
+  wipe($("#w2"), 1451 * 1260 / 1080, B[5], -1, 1.2);
+  wipe($("#w3"), 1451 * 1260 / 1080, B[6], 1, 1.2);
+  wipe($("#w4"), 1415 * 1260 / 1080, B[8], -1, 1.2);
+  const br = rng(2024);
+  for (let i = 0, t = 0; t < TOTAL; i++, t = i / 8) tl.set("#boilT", { attr: { seed: 1 + Math.floor(br() * 9) } }, t);
+  const gr = rng(99);
+  for (let i = 0, t = 0; t < TOTAL; i++, t = i / 12) {
+    tl.set("#grain", { backgroundPosition: `${Math.floor(gr() * 512)}px ${Math.floor(gr() * 512)}px` }, t);
+    tl.set("#flicker", { opacity: gr() * 0.05 }, t);
+  }
+  window.__timelines["main"] = tl;
+  }
+  const F = document.fonts; (F ? Promise.all([F.load("400 20px Inter"), F.load("700 20px Inter"), F.load("700 40px Caveat"), F.load("700 40px 'Cormorant SC'"), F.load("600 40px 'Cormorant SC'"), F.load("400 40px 'EB Garamond'"), F.load("italic 400 40px 'EB Garamond'")]).then(() => F.ready) : Promise.resolve()).then(build, build);
+})();

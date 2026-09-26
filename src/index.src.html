@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=3840, height=2160" />
+    <title>The Doctrine of Simony — Paper Explainer</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      @font-face { font-family: "Inter"; src: url("assets/fonts/inter-latin.woff2") format("woff2"); font-weight: 100 900; }
+      @font-face { font-family: "Caveat"; src: url("assets/fonts/Caveat.ttf") format("truetype"); font-weight: 400 700; }
+      @font-face { font-family: "Cormorant SC"; src: url("assets/fonts/CormorantSC-Bold.ttf") format("truetype"); font-weight: 700; }
+      @font-face { font-family: "Cormorant SC"; src: url("assets/fonts/CormorantSC-SemiBold.ttf") format("truetype"); font-weight: 600; }
+      @font-face { font-family: "UnifrakturMaguntia"; src: url("assets/fonts/UnifrakturMaguntia.ttf") format("truetype"); font-weight: 400; }
+      @font-face { font-family: "EB Garamond"; src: url("assets/fonts/EBGaramond.ttf") format("truetype"); font-weight: 400 800; }
+      @font-face { font-family: "EB Garamond"; src: url("assets/fonts/EBGaramond-Italic.ttf") format("truetype"); font-weight: 400 800; font-style: italic; }
+      :root { --ink: #201d18; --brand: #b9281d; --paper: #eae5d2; --gold: #bb8c3f; --lapis: #455a63; }
+      html, body { margin: 0; background: #eae5d2; font-family: "Inter", sans-serif; color: var(--ink); -webkit-font-smoothing: antialiased; }
+      #root { position: relative; width: 100%; height: 100%; overflow: hidden; background: #eae5d2; }
+      #z { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; zoom: 2; overflow: hidden; }
+      .scene { position: absolute; inset: 0; overflow: hidden; }
+      .stage { position: absolute; inset: 0; transform-origin: 50% 55%; }
+      .bg { position: absolute; inset: -20px; background-size: cover; background-position: center; }
+      .pp { position: absolute; transform-origin: 50% 100%; }
+      .pp .j { width: 100%; height: 100%; position: relative; }
+      .pp img { display: block; width: 100%; height: auto; filter: drop-shadow(0 7px 7px rgba(45, 35, 20, 0.26)); }
+      .noshadow img { filter: none; }
+      svg.doodle { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; overflow: visible; filter: url(#boil); pointer-events: none; }
+      svg.doodle path, svg.doodle ellipse, svg.doodle circle { fill: none; stroke: var(--ink); stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; }
+      .hand { position: absolute; font-family: "Caveat", cursive; font-weight: 700; color: var(--ink); white-space: nowrap; line-height: 1; }
+      .paper { position: absolute; box-sizing: border-box; background: #f6f2e6 url("assets/img/paper-bg.webp") center / 1600px auto; box-shadow: 0 10px 14px rgba(45, 35, 20, 0.22); }
+      .tag { position: absolute; transform-origin: 50% 50%; filter: drop-shadow(0 6px 6px rgba(45, 35, 20, 0.24)); }
+      .tag .face { font-weight: 650; white-space: nowrap; padding: 10px 18px; display: flex; align-items: center; gap: 9px; background-color: #fff; background-image: url("assets/img/paper-bg.webp"); background-size: 1600px auto; background-blend-mode: multiply; }
+      .mark { position: absolute; transform-origin: 50% 50%; }
+      .mark .face { font-weight: 800; letter-spacing: 0.1em; padding: 6px 20px; border: 7px solid currentColor; border-radius: 14px; white-space: nowrap;
+        -webkit-mask-image: url("assets/img/ink-mask.png"); mask-image: url("assets/img/ink-mask.png"); -webkit-mask-size: 100% 100%; mask-size: 100% 100%; opacity: 0.93; }
+      .word { display: inline-block; }
+      .typed span { opacity: 0; }
+      .w { opacity: 0; }
+      .wipe { position: absolute; top: -90px; height: 1260px; display: flex; flex-direction: row; left: 0; filter: drop-shadow(0 0 22px rgba(30, 20, 60, 0.4)); }
+      .wipe img { height: 1260px; width: auto; display: block; }
+      .wipe img.flip { transform: scaleX(-1); }
+      #grain { position: absolute; inset: 0; background-image: url("assets/img/grain.png"); background-size: 512px 512px; mix-blend-mode: overlay; opacity: 0.14; }
+      #vignette { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 48%, rgba(0,0,0,0) 60%, rgba(60, 40, 20, 0.24) 100%); }
+      #flicker { position: absolute; inset: 0; background: #fff4e0; opacity: 0; mix-blend-mode: soft-light; }
+    </style>
+  </head>
+  <body>
+    <svg width="0" height="0" style="position:absolute">
+      <defs>
+        <filter id="boil" x="-5%" y="-5%" width="110%" height="110%">
+          <feTurbulence id="boilT" type="fractalNoise" baseFrequency="0.03" numOctaves="2" seed="1" result="n" />
+          <feDisplacementMap in="SourceGraphic" in2="n" scale="5" xChannelSelector="R" yChannelSelector="G" />
+        </filter>
+      </defs>
+    </svg>
+    <div id="root" data-composition-id="main" data-start="0" data-width="3840" data-height="2160" data-duration="{TOTAL}">
+      <div id="z">
+<!--SECTIONS-->
+        <div id="wipes" class="clip" data-start="0" data-duration="{TOTAL}" data-track-index="5" style="position:absolute;inset:0;pointer-events:none;z-index:50">
+          <div class="wipe" id="w1"><img class="flip" src="assets/img/sheet-red.webp" /><img src="assets/img/sheet-red.webp" /></div>
+          <div class="wipe" id="w2"><img class="flip" src="assets/img/sheet-parch.webp" /><img src="assets/img/sheet-parch.webp" /></div>
+          <div class="wipe" id="w3"><img class="flip" src="assets/img/sheet-lapis.webp" /><img src="assets/img/sheet-lapis.webp" /></div>
+          <div class="wipe" id="w4"><img class="flip" src="assets/img/sheet-ink.webp" /><img src="assets/img/sheet-ink.webp" /></div>
+        </div>
+        <div id="fx" class="clip" data-start="0" data-duration="{TOTAL}" data-track-index="6" style="position:absolute;inset:0;z-index:60;pointer-events:none">
+          <div id="flicker"></div><div id="grain"></div><div id="vignette"></div>
+        </div>
+      </div>
+      <audio id="mix" src="assets/audio/mix.wav" data-start="0" data-duration="{TOTAL}" data-track-index="10" data-volume="1"></audio>
+    </div>
+    <script src="assets/film.js"></script>
+  </body>
+</html>

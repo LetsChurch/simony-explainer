@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=3840, height=2160" />
+    <title>The Doctrine of Simony — YouTube Thumbnail</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      @font-face { font-family: "Cormorant SC"; src: url("assets/fonts/CormorantSC-Bold.ttf") format("truetype"); font-weight: 700; }
+      @font-face { font-family: "EB Garamond"; src: url("assets/fonts/EBGaramond.ttf") format("truetype"); font-weight: 400 800; }
+      @font-face { font-family: "EB Garamond"; src: url("assets/fonts/EBGaramond-Italic.ttf") format("truetype"); font-weight: 400 800; font-style: italic; }
+      @font-face { font-family: "Caveat"; src: url("assets/fonts/Caveat.ttf") format("truetype"); font-weight: 400 700; }
+      html, body { margin: 0; background: #ded3b2; }
+      #root { position: relative; width: 100%; height: 100%; overflow: hidden; }
+      #z { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; zoom: 2; overflow: hidden; }
+      .abs { position: absolute; }
+      .bg { position: absolute; inset: -20px; background: url("assets/img/vellum-bg.webp") center / cover; }
+      .dec { position: absolute; inset: 0; background: url("assets/img/decretum.jpg") center / cover; opacity: .26; mix-blend-mode: multiply;
+        -webkit-mask-image: radial-gradient(ellipse 70% 70% at 60% 45%, #000 30%, transparent 100%); mask-image: radial-gradient(ellipse 70% 70% at 60% 45%, #000 30%, transparent 100%); }
+      .shadow { filter: drop-shadow(0 14px 14px rgba(40, 28, 10, 0.45)); }
+      .strip { position: absolute; inset: 0; -webkit-mask-size: 100% 100%; mask-size: 100% 100%; background-size: 1600px auto; background-blend-mode: multiply; }
+      .coin { position: absolute; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #e7c46e, #bb8c3f 60%, #8a6526); border: 4px solid #7a5a22; box-sizing: border-box; box-shadow: 0 5px 6px rgba(40,28,10,.35); }
+      #grain { position: absolute; inset: 0; background-image: url("assets/img/grain.png"); background-size: 512px 512px; mix-blend-mode: overlay; opacity: 0.14; }
+      #vignette { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 45%, rgba(0,0,0,0) 55%, rgba(50, 30, 10, 0.4) 100%); }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-width="3840" data-height="2160" data-duration="1">
+      <div id="z" class="clip" data-start="0" data-duration="1" data-track-index="1">
+        <div class="bg"></div><div class="dec"></div>
+        <!-- Peter and Simon Magus (Liberale da Verona, attrib., ca. 1470–75; public domain), cut out like the book cover -->
+        <img src="assets/img/peter.webp" class="abs shadow" style="left:1050px;top:210px;width:400px" />
+        <img src="assets/img/simon.webp" class="abs shadow" style="left:1400px;top:250px;width:610px" />
+        <div class="coin" style="left:1428px;top:600px;width:60px;height:60px;transform:rotate(12deg)"></div>
+        <div class="coin" style="left:1468px;top:700px;width:54px;height:54px"></div>
+        <div class="coin" style="left:1418px;top:800px;width:58px;height:58px"></div>
+        <!-- title on a torn strip -->
+        <div class="abs shadow" style="left:40px;top:190px;width:1000px;height:470px;transform:rotate(-2.5deg)">
+          <div class="strip" style="-webkit-mask-image:url('assets/img/tear-cream.webp');mask-image:url('assets/img/tear-cream.webp');background-color:#f3eedd;background-image:url('assets/img/paper-bg.webp')"></div>
+          <div style="position:absolute;left:0;right:0;top:92px;text-align:center;font-family:'EB Garamond';font-size:64px;color:#201d18;line-height:1">The Doctrine of</div>
+          <div style="position:absolute;left:0;right:0;top:152px;text-align:center;font-family:'Cormorant SC';font-weight:700;font-size:236px;color:#201d18;line-height:1;letter-spacing:.01em">SIMONY</div>
+          <img src="assets/img/tape.webp" style="position:absolute;left:-40px;top:20px;width:200px;transform:rotate(-28deg);opacity:.9" />
+          <img src="assets/img/tape.webp" style="position:absolute;right:-40px;bottom:40px;width:200px;transform:rotate(-24deg);opacity:.9" />
+        </div>
+        <!-- rubric-red question label -->
+        <div class="abs shadow" style="left:120px;top:700px;width:860px;height:190px;transform:rotate(2deg)">
+          <div class="strip" style="-webkit-mask-image:url('assets/img/tear-cream.webp');mask-image:url('assets/img/tear-cream.webp');background-color:#b9281d;background-image:url('assets/img/paper-bg.webp')"></div>
+          <div style="position:absolute;left:0;right:0;top:40px;text-align:center;font-family:'Caveat';font-weight:700;font-size:104px;color:#f6f0dc;line-height:1">the forgotten sin</div>
+        </div>
+        <div id="grain"></div><div id="vignette"></div>
+      </div>
+    </div>
+    <script>
+      window.__timelines = window.__timelines || {};
+      window.__timelines["main"] = gsap.timeline({ paused: true });
+      window.__timelines["main"].set("#z", { opacity: 1 }, 0);
+    </script>
+  </body>
+</html>
