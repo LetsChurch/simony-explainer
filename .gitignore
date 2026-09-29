@@ -17,3 +17,6 @@ gen/helpers.js
 gen/body.js
 gen/asset-sheet.jpg
 __pycache__/
+
+# rendered outputs (regenerable; kept out of git)
+renders/
