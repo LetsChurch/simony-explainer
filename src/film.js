@@ -676,6 +676,9 @@
     tl.set("#grain", { backgroundPosition: `${Math.floor(gr() * 512)}px ${Math.floor(gr() * 512)}px` }, t);
     tl.set("#flicker", { opacity: gr() * 0.05 }, t);
   }
+  // warm-up: play the whole timeline through once, in order, so every tween records its start values before any
+  // parallel render worker seeks into the middle of it
+  tl.progress(1, true).progress(0, true);
   window.__timelines["main"] = tl;
   }
   const F = document.fonts; (F ? Promise.all([F.load("400 20px Inter"), F.load("700 20px Inter"), F.load("700 40px Caveat"), F.load("700 40px 'Cormorant SC'"), F.load("600 40px 'Cormorant SC'"), F.load("400 40px 'EB Garamond'"), F.load("italic 400 40px 'EB Garamond'")]).then(() => F.ready) : Promise.resolve()).then(build, build);
