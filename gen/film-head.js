@@ -225,6 +225,27 @@
     el.id = id; el.innerHTML = `<div class="j"><img src="${IMG}${name}.webp" />${extra || ""}</div>`;
     return "#" + id;
   }
+  // Price-tag writing: the tag body's writable rectangle (past the eyelet, inside the paper border), measured once from
+  // the alpha mask of assets/img/price-tag.webp by gen/measure_tag.py — centre (fractions of the image), long-axis angle
+  // (deg), and the rectangle's length/width (fractions of image width). The text's real glyph ink box is centred on it.
+  const TAG_BODY = { cx: 0.6329, cy: 0.6238, ang: 43.12, len: 0.555, wid: 0.3609 };
+  const TAG_FILL = 0.62;                                  // ink height as a share of the body width (even margin across)
+  function tagText(w, txt, color) {
+    const h = w * RATIO["price-tag"], L = TAG_BODY.len * w, D = TAG_BODY.wid * w;
+    const g = (tagText.c || (tagText.c = document.createElement("canvas").getContext("2d")));
+    g.font = "700 100px Caveat";
+    const m = g.measureText(txt);
+    const iw = m.actualBoundingBoxLeft + m.actualBoundingBoxRight, ih = m.actualBoundingBoxAscent + m.actualBoundingBoxDescent;
+    let k = (D * TAG_FILL) / ih;
+    const mg = (D - ih * k) / 2;
+    if (iw * k > L - 2 * mg) k = (L - 2 * mg) / iw;         // never tighter along the axis than across it
+    const fs = 100 * k, fa = m.fontBoundingBoxAscent * k, fd = m.fontBoundingBoxDescent * k;
+    const base = (fs - (fa + fd)) / 2 + fa;                 // baseline inside a line-height:1 box
+    const x = -(m.actualBoundingBoxRight - m.actualBoundingBoxLeft) * k / 2;
+    const y = -base - (m.actualBoundingBoxDescent - m.actualBoundingBoxAscent) * k / 2;
+    return `<div class="tagtxt" style="position:absolute;left:${(TAG_BODY.cx * w).toFixed(2)}px;top:${(TAG_BODY.cy * h).toFixed(2)}px;width:0;height:0;transform:rotate(${TAG_BODY.ang}deg)">` +
+      `<div class="hand" style="left:${x.toFixed(2)}px;top:${y.toFixed(2)}px;font-size:${fs.toFixed(2)}px;color:${color}">${txt}</div></div>`;
+  }
   function path(dd, d, style) { const p = document.createElementNS("http://www.w3.org/2000/svg", "path"); p.setAttribute("d", d); if (style) p.setAttribute("style", style); dd.appendChild(p); return p; }
   function slap(el, t, rot) {
     hide(el);

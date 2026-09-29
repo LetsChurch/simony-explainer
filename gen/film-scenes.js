@@ -211,7 +211,21 @@
     [$(hc), $(hd), lb1, lb2, m1, m2].forEach((el) => fadeOut(el, tAnd, 0.25));
     const ht = cut(st, "s5-heart", "heart", 960, 700, 340); pop(ht, T("l6", "sin") - 0.05, { d: 0.4 }); jit(ht, W("l6", "sin") + 0.4, t1, 0.8, 53);
     const iw = hand(st, 1160, 450, 64, "in the will", { color: RED, transform: "rotate(-4deg)" }); writeOn(iw, T("l6", "will"), 0.35);
-    draw(path(dd, "M1150 505 C 1110 520 1100 540 1100 560 M1085 540 L1100 566 L1118 544", `stroke:${RED};stroke-width:6`), W("l6", "will", 0, true), 0.2);
+    // arrow from under the label into the heart: the tip sits just outside the heart's measured outline
+    // (HEART_OUTLINE: polar outline from the alpha mask of heart.webp, gen/measure_heart.py), entering along the outward normal
+    {
+      const HEART_OUTLINE = [[0.4297,0.0],[0.4074,0.0345],[0.3841,0.0656],[0.3614,0.0937],[0.3366,0.1186],[0.3139,0.1417],[0.2953,0.165],[0.275,0.1864],[0.2549,0.207],[0.2361,0.2286],[0.215,0.248],[0.1949,0.2695],[0.1738,0.2913],[0.1531,0.3178],[0.1298,0.3451],[0.1042,0.3763],[0.0758,0.4163],[0.0423,0.4679],[0.0,0.496],[-0.0395,0.4365],[-0.0714,0.3921],[-0.0991,0.3581],[-0.1233,0.3279],[-0.1459,0.3028],[-0.1678,0.2814],[-0.1888,0.261],[-0.2082,0.2402],[-0.2278,0.2205],[-0.2477,0.2011],[-0.2668,0.1808],[-0.2882,0.161],[-0.308,0.139],[-0.3304,0.1164],[-0.3534,0.0917],[-0.3789,0.0647],[-0.4027,0.0341],[-0.4255,0.0],[-0.4498,-0.0381],[-0.468,-0.0799],[-0.483,-0.1253],[-0.4932,-0.1737],[-0.4965,-0.2241],[-0.4914,-0.2746],[-0.4793,-0.3249],[-0.4564,-0.3707],[-0.4275,-0.4138],[-0.3886,-0.4483],[-0.3441,-0.4757],[-0.292,-0.4895],[-0.2403,-0.4988],[-0.1854,-0.493],[-0.1308,-0.4725],[-0.0802,-0.44],[-0.0365,-0.4035],[-0.0,-0.365],[0.0341,-0.3773],[0.0763,-0.4186],[0.1257,-0.4542],[0.1811,-0.4817],[0.2375,-0.4931],[0.2926,-0.4905],[0.3427,-0.4738],[0.3898,-0.4496],[0.4275,-0.4138],[0.4564,-0.3707],[0.4783,-0.3242],[0.4929,-0.2755],[0.4976,-0.2246],[0.4959,-0.1747],[0.4852,-0.1259],[0.4715,-0.0805],[0.4522,-0.0383]];
+      const hE = $(ht), hw = hE.offsetWidth, hh = hw * RATIO.heart, hx = hE.offsetLeft, hy = hE.offsetTop, hcx = hx + hw / 2, hcy = hy + hh / 2;
+      const sx = iw.offsetLeft + 18, sy = iw.offsetTop + iw.offsetHeight + 10;          // under the start of "in the will"
+      const qx = sx - 60, qy = sy + 70;                                                  // aim down-left, toward the heart's flank
+      let best = null;
+      HEART_OUTLINE.forEach(([u, v]) => { const px = hcx + u * hw, py = hcy + v * hh, d = Math.hypot(px - qx, py - qy); if (!best || d < best.d) best = { px, py, d }; });
+      const nl = Math.hypot(best.px - hcx, best.py - hcy), nx = (best.px - hcx) / nl, ny = (best.py - hcy) / nl;
+      const tx = best.px + nx * 12, ty = best.py + ny * 12;                              // tip just outside the outline
+      const c2x = tx + nx * 55, c2y = ty + ny * 55, c1x = sx - 4, c1y = sy + 40;
+      draw(path(dd, `M${sx} ${sy} C ${c1x} ${c1y} ${c2x} ${c2y} ${tx} ${ty}`, `stroke:${RED};stroke-width:6`), W("l6", "will", 0, true), 0.2);
+      draw(arrowHead(dd, tx, ty, Math.atan2(ty - c2y, tx - c2x), `stroke:${RED};stroke-width:6`), W("l6", "will", 0, true) + 0.2, 0.08);
+    }
     const wh = lab(st, 960, 760, 1300, "whether or not money changes hands", 66, { color: INK }); writeOn(wh, T("l6", "whether"), 1.0);
   })();
 
@@ -254,7 +268,7 @@
     revealAt(C, seq("l8", ["the", "worker", "is", "worthy", "of", "his", "wages"]));
     refAt(C, WE("l8", "wages"));
     // …but support is not a price
-    const pt = cut(st, "s7-tag", "price-tag", 0, 0, 150, `<div class="hand" style="left:${150 * 0.34}px;top:${145 * 0.36}px;font-size:64px;transform:rotate(35deg);color:${INK}">$</div>`);
+    const pt = cut(st, "s7-tag", "price-tag", 0, 0, 150, tagText(150, "$", INK));
     tl.set(pt, { x: 1080 + 75, y: 560 + 145, transformOrigin: "22% 12%" }, 0);
     const tB = T("l8", "but");
     hide(pt); anim(pt, tB, 0.4, (p) => ({ opacity: 1, y: 560 + 145 - 500 * (1 - E("back.out(1.4)")(p)) }), 12);
@@ -300,7 +314,7 @@
       const el = cut(st, "s8-" + n, n, cx, bot, w); tl.set(el, { transformOrigin: "50% 50%" }, 0); slap($(el), t - 0.04, [-3, 2, 3][i]); jit(el, t + 0.3, t1, 0.6, 81 + i);
       const lb = lab(st, cx, bot + 16, 420, label, 56); writeOn(lb, t + 0.05, 0.4);
       const h = w * RATIO[n];
-      const tg = cut(st, "s8-tag" + i, "price-tag", 0, 0, 110, `<div class="hand" style="left:${110 * 0.34}px;top:${107 * 0.36}px;font-size:48px;transform:rotate(35deg);color:${INK}">$</div>`);
+      const tg = cut(st, "s8-tag" + i, "price-tag", 0, 0, 110, tagText(110, "$", INK));
       tl.set(tg, { x: cx + w / 2 - 70 + 55, y: bot - h + 20 + 107, transformOrigin: "22% 12%" }, 0);
       hide(tg); anim(tg, t + 0.25, 0.3, (p) => ({ opacity: 1, rotation: 30 * (1 - E("back.out(2)")(p)) }), 12);
       els.push($(el), lb, $(tg));
